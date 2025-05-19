@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
             QString targetUser = QInputDialog::getText(&window, "Share File", "Share with user:");
             if (!targetUser.isEmpty()) {
                 sharedFiles.append(name + " (shared by " + currentUser + ")");
-                QMessageBox::information(&window, "Shared", "File shared with " + targetUser);
+                QMessageBox::information(&window, "Shareds", "File shared with " + targetUser);
                 refreshFileList(fileList);
             }
         } else {
@@ -170,4 +170,3 @@ int main(int argc, char *argv[]) {
 
     return app.exec();
 }
-ex
