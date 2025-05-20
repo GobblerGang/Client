@@ -26,7 +26,6 @@ protected:
     QString username;
     QStringList ownedFiles;
     QStringList sharedFiles;
-//hi
 
 public:
     User(const QString& name) : username(name) {}
