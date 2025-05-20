@@ -2,30 +2,138 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QLineEdit>
 #include <QLabel>
 #include <QListWidget>
 #include <QTabWidget>
 #include <QFileDialog>
-#include <QInputDialog>
 #include <QMessageBox>
+#include <QFileInfo>
+#include <vector>
+#include <memory>
 
-QString currentUser;
-QStringList ownedFiles;
-QStringList sharedFiles;
+// Abstract base class for file operations
+class FileOperation {
+public:
+    virtual void execute() = 0;
+    virtual ~FileOperation() = default;
+};
 
-void refreshFileList(QListWidget *list) {
-    list->clear();
-    list->addItem("📁 Owned Files:");
-    for (const QString &file : ownedFiles) {
-        list->addItem("  " + file);
+// Base class for user management
+class User {
+protected:
+    QString username;
+    QStringList ownedFiles;
+    QStringList sharedFiles;
+
+public:
+    User(const QString& name) : username(name) {}
+    virtual ~User() = default;
+
+    // Make addFile virtual so it can be overridden
+    virtual void addFile(const QString& file) { ownedFiles.append(file); }
+    void addFile(const QString& file, const QString& owner) {
+        sharedFiles.append(file + " (shared by " + owner + ")");
     }
-    list->addItem("👥 Shared With You:");
-    for (const QString &file : sharedFiles) {
-        list->addItem("  " + file);
+
+    // Call by reference
+    void removeFile(const QString& file, bool& success) {
+        if (ownedFiles.contains(file)) {
+            ownedFiles.removeAll(file);
+            success = true;
+        } else {
+            success = false;
+        }
     }
-}
+
+    QString getUsername() const { return username; }
+    const QStringList& getOwnedFiles() const { return ownedFiles; }
+    const QStringList& getSharedFiles() const { return sharedFiles; }
+};
+
+// Derived class for admin users
+class AdminUser : public User {
+public:
+    AdminUser(const QString& name) : User(name) {}
+
+    // Override virtual function
+    void addFile(const QString& file) override {
+        User::addFile(file);
+        // Admin-specific file handling
+    }
+};
+
+// File manager class using RAII
+class FileManager {
+private:
+    std::unique_ptr<User> currentUser;
+    QListWidget* fileList;
+
+public:
+    FileManager(QListWidget* list) : fileList(list) {}
+
+    // Copy constructor
+    FileManager(const FileManager& other) : fileList(other.fileList) {
+        if (other.currentUser) {
+            currentUser = std::make_unique<User>(other.currentUser->getUsername());
+        }
+    }
+
+    void setUser(std::unique_ptr<User> user) {
+        currentUser = std::move(user);
+    }
+
+    // Add getCurrentUser method
+    User* getCurrentUser() const {
+        return currentUser.get();
+    }
+
+    void refreshFileList() {
+        if (!currentUser) return;
+
+        fileList->clear();
+        fileList->addItem("📁 Owned Files:");
+        for (const QString& file : currentUser->getOwnedFiles()) {
+            fileList->addItem("  " + file);
+        }
+        fileList->addItem("👥 Shared With You:");
+        for (const QString& file : currentUser->getSharedFiles()) {
+            fileList->addItem("  " + file);
+        }
+    }
+
+    // Pointer arithmetic example
+    void processFiles() {
+        QStringList* files = new QStringList(currentUser->getOwnedFiles());
+        QStringList* current = files;
+        while (current != files + 1) {
+            // Process files
+            current++;
+        }
+        delete files;
+    }
+};
+
+// Concrete file operation classes
+class UploadOperation : public FileOperation {
+private:
+    QWidget* parent;
+    User* user;
+    QListWidget* fileList;
+
+public:
+    UploadOperation(QWidget* p, User* u, QListWidget* fl)
+            : parent(p), user(u), fileList(fl) {}
+
+    void execute() override {
+        QString fileName = QFileDialog::getOpenFileName(parent, "Select File to Upload");
+        if (!fileName.isEmpty()) {
+            QFileInfo info(fileName);
+            user->addFile(info.fileName());
+            QMessageBox::information(parent, "Uploaded", "File uploaded: " + info.fileName());
+        }
+    }
+};
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -78,7 +186,6 @@ int main(int argc, char *argv[]) {
     fileLayout->addLayout(buttonsLayout);
     fileTab->setLayout(fileLayout);
 
-    // Add tabs to the main window
     tabs->addTab(authTab, "Login");
     tabs->addTab(fileTab, "Files");
 
@@ -86,87 +193,31 @@ int main(int argc, char *argv[]) {
     mainLayout->addWidget(tabs);
     window.setLayout(mainLayout);
     window.resize(650, 400);
-    window.show();
 
-    // --- Functional connections ---
+    // Create file manager
+    FileManager fileManager(fileList);
 
+    // Connect signals
     QObject::connect(loginButton, &QPushButton::clicked, [&]() {
-        currentUser = usernameEdit->text();
-        if (currentUser.isEmpty()) {
+        QString username = usernameEdit->text();
+        if (username.isEmpty()) {
             QMessageBox::warning(&window, "Login Failed", "Please enter a username.");
             return;
         }
-        QMessageBox::information(&window, "Logged in", "Welcome, " + currentUser + "!");
-        tabs->setCurrentIndex(1);
-        refreshFileList(fileList);
-    });
 
-    QObject::connect(signupButton, &QPushButton::clicked, [&]() {
-        QString user = usernameEdit->text();
-        if (user.isEmpty()) {
-            QMessageBox::warning(&window, "Signup Failed", "Please enter a username.");
-            return;
-        }
-        QMessageBox::information(&window, "Signup Complete", "Account created for " + user);
+        // Create new user
+        fileManager.setUser(std::make_unique<User>(username));
+        QMessageBox::information(&window, "Logged in", "Welcome, " + username + "!");
+        tabs->setCurrentIndex(1);
+        fileManager.refreshFileList();
     });
 
     QObject::connect(uploadButton, &QPushButton::clicked, [&]() {
-        QString fileName = QFileDialog::getOpenFileName(&window, "Select File to Upload");
-        if (!fileName.isEmpty()) {
-            QFileInfo info(fileName);
-            ownedFiles.append(info.fileName());
-            QMessageBox::information(&window, "Uploaded", "File uploaded: " + info.fileName());
-            refreshFileList(fileList);
-        }
+        UploadOperation uploadOp(&window, fileManager.getCurrentUser(), fileList);
+        uploadOp.execute();
+        fileManager.refreshFileList();
     });
 
-    QObject::connect(downloadButton, &QPushButton::clicked, [&]() {
-        QListWidgetItem *item = fileList->currentItem();
-        if (!item || item->text().startsWith("📁") || item->text().startsWith("👥")) {
-            QMessageBox::warning(&window, "Download", "Please select a file to download.");
-            return;
-        }
-        QMessageBox::information(&window, "Downloaded", "File downloaded: " + item->text().trimmed());
-    });
-
-    QObject::connect(deleteButton, &QPushButton::clicked, [&]() {
-        QListWidgetItem *item = fileList->currentItem();
-        QString name = item ? item->text().trimmed() : "";
-        if (ownedFiles.contains(name)) {
-            ownedFiles.removeAll(name);
-            QMessageBox::information(&window, "Deleted", "File deleted: " + name);
-            refreshFileList(fileList);
-        } else {
-            QMessageBox::warning(&window, "Delete", "You can only delete your own files.");
-        }
-    });
-
-    QObject::connect(shareButton, &QPushButton::clicked, [&]() {
-        QListWidgetItem *item = fileList->currentItem();
-        QString name = item ? item->text().trimmed() : "";
-        if (ownedFiles.contains(name)) {
-            QString targetUser = QInputDialog::getText(&window, "Share File", "Share with user:");
-            if (!targetUser.isEmpty()) {
-                sharedFiles.append(name + " (shared by " + currentUser + ")");
-                QMessageBox::information(&window, "Shareds", "File shared with " + targetUser);
-                refreshFileList(fileList);
-            }
-        } else {
-            QMessageBox::warning(&window, "Share", "Select one of your own files to share.");
-        }
-    });
-
-    QObject::connect(revokeButton, &QPushButton::clicked, [&]() {
-        QListWidgetItem *item = fileList->currentItem();
-        QString name = item ? item->text().trimmed() : "";
-        if (sharedFiles.contains(name)) {
-            sharedFiles.removeAll(name);
-            QMessageBox::information(&window, "Access Revoked", "Access revoked for file: " + name);
-            refreshFileList(fileList);
-        } else {
-            QMessageBox::warning(&window, "Revoke", "Select a shared file to revoke.");
-        }
-    });
-
+    window.show();
     return app.exec();
 }
