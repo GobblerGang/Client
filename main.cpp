@@ -11,6 +11,7 @@
 #include <QFileInfo>
 #include <vector>
 #include <memory>
+using namespace std;
 
 // Abstract base class for file operations
 class FileOperation {
@@ -66,7 +67,7 @@ public:
 // File manager class using RAII
 class FileManager {
 private:
-    std::unique_ptr<User> currentUser;
+    unique_ptr<User> currentUser;
     QListWidget* fileList;
 
 public:
@@ -79,8 +80,8 @@ public:
         }
     }
 
-    void setUser(std::unique_ptr<User> user) {
-        currentUser = std::move(user);
+    void setUser(unique_ptr<User> user) {
+        currentUser = move(user);
     }
 
     // Add getCurrentUser method
@@ -92,11 +93,11 @@ public:
         if (!currentUser) return;
 
         fileList->clear();
-        fileList->addItem("📁 Owned Files:");
+        fileList->addItem("Owned Files:");
         for (const QString& file : currentUser->getOwnedFiles()) {
             fileList->addItem("  " + file);
         }
-        fileList->addItem("👥 Shared With You:");
+        fileList->addItem("Shared With You:");
         for (const QString& file : currentUser->getSharedFiles()) {
             fileList->addItem("  " + file);
         }
@@ -206,7 +207,7 @@ int main(int argc, char *argv[]) {
         }
 
         // Create new user
-        fileManager.setUser(std::make_unique<User>(username));
+        fileManager.setUser(make_unique<User>(username));
         QMessageBox::information(&window, "Logged in", "Welcome, " + username + "!");
         tabs->setCurrentIndex(1);
         fileManager.refreshFileList();
