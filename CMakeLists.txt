@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.27)
 project(untitled5)
 
-set(CMAKE_PREFIX_PATH "C:/Qt/6.9.0/mingw_64")
+set(CMAKE_PREFIX_PATH "" CACHE PATH "Additional CMake search path")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+
+set(Qt6_DIR "" CACHE PATH "Path to Qt6 CMake directory")
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
 
