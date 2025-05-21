@@ -9,36 +9,30 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFileInfo>
-#include <vector>
+#include <QSpacerItem>
+#include <unordered_map>
 #include <memory>
+
 using namespace std;
 
-// Abstract base class for file operations
 class FileOperation {
 public:
     virtual void execute() = 0;
     virtual ~FileOperation() = default;
 };
 
-// Base class for user management
 class User {
 protected:
     QString username;
     QStringList ownedFiles;
     QStringList sharedFiles;
 
-
 public:
     User(const QString& name) : username(name) {}
     virtual ~User() = default;
 
-    // Make addFile virtual so it can be overridden
     virtual void addFile(const QString& file) { ownedFiles.append(file); }
-    void addFile(const QString& file, const QString& owner) {
-        sharedFiles.append(file + " (shared by " + owner + ")");
-    }
 
-    // Call by reference
     void removeFile(const QString& file, bool& success) {
         if (ownedFiles.contains(file)) {
             ownedFiles.removeAll(file);
@@ -53,18 +47,15 @@ public:
     const QStringList& getSharedFiles() const { return sharedFiles; }
 };
 
-// Derived class for admin users
 class AdminUser : public User {
 public:
     AdminUser(const QString& name) : User(name) {}
 
-    // Override virtual function
     void addFile(const QString& file) override {
         User::addFile(file);
     }
 };
 
-// File manager class using RAII
 class FileManager {
 private:
     unique_ptr<User> currentUser;
@@ -73,18 +64,10 @@ private:
 public:
     FileManager(QListWidget* list) : fileList(list) {}
 
-    // Copy constructor
-    FileManager(const FileManager& other) : fileList(other.fileList) {
-        if (other.currentUser) {
-            currentUser = std::make_unique<User>(other.currentUser->getUsername());
-        }
-    }
-
     void setUser(unique_ptr<User> user) {
         currentUser = move(user);
     }
 
-    // Add getCurrentUser method
     User* getCurrentUser() const {
         return currentUser.get();
     }
@@ -102,20 +85,8 @@ public:
             fileList->addItem("  " + file);
         }
     }
-
-    // Pointer arithmetic example
-    void processFiles() {
-        QStringList* files = new QStringList(currentUser->getOwnedFiles());
-        QStringList* current = files;
-        while (current != files + 1) {
-            // Process files
-            current++;
-        }
-        delete files;
-    }
 };
 
-// Concrete file operation classes
 class UploadOperation : public FileOperation {
 private:
     QWidget* parent;
@@ -143,10 +114,11 @@ int main(int argc, char *argv[]) {
     window.setWindowTitle("Secure File Sharing");
 
     QTabWidget *tabs = new QTabWidget();
+    tabs->setTabPosition(QTabWidget::North);
 
-    // --- Login/Signup tab ---
     QWidget *authTab = new QWidget();
     QVBoxLayout *authLayout = new QVBoxLayout();
+    authLayout->setAlignment(Qt::AlignCenter);
 
     QLineEdit *usernameEdit = new QLineEdit();
     usernameEdit->setPlaceholderText("Username");
@@ -157,14 +129,16 @@ int main(int argc, char *argv[]) {
     QPushButton *loginButton = new QPushButton("Login");
     QPushButton *signupButton = new QPushButton("Sign Up");
 
+    QLabel *statusLabel = new QLabel;
+
     authLayout->addWidget(new QLabel("Login / Signup"));
     authLayout->addWidget(usernameEdit);
     authLayout->addWidget(passwordEdit);
     authLayout->addWidget(loginButton);
     authLayout->addWidget(signupButton);
+    authLayout->addWidget(statusLabel);
     authTab->setLayout(authLayout);
 
-    // --- File Manager tab ---
     QWidget *fileTab = new QWidget();
     QVBoxLayout *fileLayout = new QVBoxLayout();
 
@@ -187,36 +161,87 @@ int main(int argc, char *argv[]) {
     fileLayout->addLayout(buttonsLayout);
     fileTab->setLayout(fileLayout);
 
-    tabs->addTab(authTab, "Login");
-    tabs->addTab(fileTab, "Files");
-
     QVBoxLayout *mainLayout = new QVBoxLayout();
     mainLayout->addWidget(tabs);
     window.setLayout(mainLayout);
-    window.resize(650, 400);
+    window.resize(700, 400);
 
-    // Create file manager
-    FileManager fileManager(fileList);
+    FileManager *fileManagerPtr = new FileManager(fileList);
+    unordered_map<QString, QString> userDatabase;
 
-    // Connect signals
+    tabs->addTab(authTab, "Login");
+
     QObject::connect(loginButton, &QPushButton::clicked, [&]() {
-        QString username = usernameEdit->text();
-        if (username.isEmpty()) {
-            QMessageBox::warning(&window, "Login Failed", "Please enter a username.");
+        QString username = usernameEdit->text().trimmed();
+        QString password = passwordEdit->text().trimmed();
+
+        if (username.isEmpty() || password.isEmpty()) {
+            statusLabel->setText("Please enter both username and password.");
             return;
         }
 
-        // Create new user
-        fileManager.setUser(make_unique<User>(username));
-        QMessageBox::information(&window, "Logged in", "Welcome, " + username + "!");
-        tabs->setCurrentIndex(1);
-        fileManager.refreshFileList();
+        auto it = userDatabase.find(username);
+        if (it != userDatabase.end() && it->second == password) {
+            fileManagerPtr->setUser(make_unique<User>(username));
+            fileManagerPtr->refreshFileList();
+            statusLabel->setText("Login successful!");
+            if (tabs->count() < 2)
+                tabs->addTab(fileTab, "Files");
+            tabs->setCurrentWidget(fileTab);
+        } else {
+            statusLabel->setText("Incorrect username or password.");
+        }
+    });
+
+    QObject::connect(signupButton, &QPushButton::clicked, [&]() {
+        QString username = usernameEdit->text().trimmed();
+        QString password = passwordEdit->text().trimmed();
+
+        if (username.isEmpty() || password.isEmpty()) {
+            statusLabel->setText("Please enter both username and password.");
+            return;
+        }
+
+        if (userDatabase.find(username) != userDatabase.end()) {
+            statusLabel->setText("User already exists.");
+        } else {
+            userDatabase[username] = password;
+            fileManagerPtr->setUser(make_unique<User>(username));
+            fileManagerPtr->refreshFileList();
+            statusLabel->setText("Signup successful! You are now logged in.");
+            if (tabs->count() < 2)
+                tabs->addTab(fileTab, "Files");
+            tabs->setCurrentWidget(fileTab);
+        }
     });
 
     QObject::connect(uploadButton, &QPushButton::clicked, [&]() {
-        UploadOperation uploadOp(&window, fileManager.getCurrentUser(), fileList);
-        uploadOp.execute();
-        fileManager.refreshFileList();
+        UploadOperation op(&window, fileManagerPtr->getCurrentUser(), fileList);
+        op.execute();
+        fileManagerPtr->refreshFileList();
+    });
+
+    QObject::connect(deleteButton, &QPushButton::clicked, [&]() {
+        auto* user = fileManagerPtr->getCurrentUser();
+        QListWidgetItem* selectedItem = fileList->currentItem();
+        if (!selectedItem) {
+            QMessageBox::warning(&window, "Delete", "Please select a file.");
+            return;
+        }
+
+        QString itemText = selectedItem->text().trimmed();
+        if (itemText.startsWith("Owned Files:") || itemText.startsWith("Shared With You:")) {
+            return;
+        }
+
+        bool success = false;
+        user->removeFile(itemText, success);
+        if (success) {
+            QMessageBox::information(&window, "Deleted", "File removed.");
+        } else {
+            QMessageBox::warning(&window, "Failed", "You can only delete owned files.");
+        }
+        fileManagerPtr->refreshFileList();
     });
 
     window.show();
