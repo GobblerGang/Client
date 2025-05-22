@@ -51,7 +51,7 @@ public:
 
 class FileManager {
 private:
-    unique_ptr<User> currentUser;
+    unique_ptr<User> currentUser; //smart pointer
     QListWidget* fileList;
 
 public:
