@@ -108,6 +108,7 @@ public:
 };
 
 int main(int argc, char *argv[]) {
+    cout<<"test";
     QApplication app(argc, argv);
 
     QWidget window;
