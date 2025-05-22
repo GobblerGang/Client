@@ -13,7 +13,9 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
 
-add_executable(untitled5 main.cpp)
+add_executable(untitled5 main.cpp
+        UI.cpp
+        model.cpp)
 
 target_link_libraries(untitled5 Qt::Core Qt::Gui Qt::Widgets)
 
