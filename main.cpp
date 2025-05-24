@@ -14,9 +14,16 @@ int main(int argc, char *argv[]) {
     TemplateFileManager<UploadOperation> fileManager(ui.fileList);
     std::unordered_map<QString, QString> userDatabase;
 
-    // Function pointer example
-    auto loginHandler = [&](const QString& username) {
-        fileManager.processUpload(username + "_files.txt");
+    // Function to switch to files tab
+    auto switchToFilesTab = [&]() {
+        // Add the files tab if it doesn't exist
+        if (ui.tabs->count() < 2) {
+            ui.tabs->addTab(ui.fileTab, "Files");
+        }
+        ui.tabs->setCurrentIndex(1);  // Switch to files tab (index 1)
+        ui.fileList->clear();
+        ui.fileList->addItem("Owned Files:");
+        ui.fileList->addItem("Shared With You:");
     };
 
     QObject::connect(ui.loginButton, &QPushButton::clicked, [&]() {
@@ -30,14 +37,8 @@ int main(int argc, char *argv[]) {
 
         auto it = userDatabase.find(username);
         if (it != userDatabase.end() && it->second == password) {
-            // Create a shared pointer for the user
-            auto user = std::make_shared<UploadOperation>(username + "_files.txt");
-            fileManager.processFile(username + "_files.txt", [&](const QString& path) {
-                ui.statusLabel->setText("Login successful!");
-                if (ui.tabs->count() < 2)
-                    ui.tabs->addTab(ui.fileTab, "Files");
-                ui.tabs->setCurrentWidget(ui.fileTab);
-            });
+            ui.statusLabel->setText("Login successful!");
+            switchToFilesTab();
         } else {
             ui.statusLabel->setText("Incorrect username or password.");
         }
@@ -56,22 +57,16 @@ int main(int argc, char *argv[]) {
             ui.statusLabel->setText("User already exists.");
         } else {
             userDatabase[username] = password;
-            // Create a unique pointer for the new user
-            auto user = std::make_unique<UploadOperation>(username + "_files.txt");
-            fileManager.processFile(username + "_files.txt", [&](const QString& path) {
-                ui.statusLabel->setText("Signup successful! You are now logged in.");
-                if (ui.tabs->count() < 2)
-                    ui.tabs->addTab(ui.fileTab, "Files");
-                ui.tabs->setCurrentWidget(ui.fileTab);
-            });
+            ui.statusLabel->setText("Signup successful! You are now logged in.");
+            switchToFilesTab();
         }
     });
 
     QObject::connect(ui.uploadButton, &QPushButton::clicked, [&]() {
         QString fileName = QFileDialog::getOpenFileName(ui.window, "Select File to Upload");
         if (!fileName.isEmpty()) {
-            // Use template method with callback
             fileManager.processFile(fileName, [&](const QString& path) {
+                ui.fileList->addItem(path);
                 QMessageBox::information(ui.window, "Uploaded", "File uploaded: " + path);
             });
         }
@@ -84,15 +79,18 @@ int main(int argc, char *argv[]) {
             return;
         }
 
-        QString itemText = selectedItem->text().trimmed();
-        if (itemText.startsWith("Owned Files:") || itemText.startsWith("Shared With You:")) {
+        QString itemText = selectedItem->text();
+        if (itemText == "Owned Files:" || itemText == "Shared With You:") {
             return;
         }
 
-        // Use template method with policy
         fileManager.processFileWithPolicy<DefaultPolicy>(itemText);
+        delete ui.fileList->takeItem(ui.fileList->row(selectedItem));
         QMessageBox::information(ui.window, "Deleted", "File removed.");
     });
+
+    // Initially show only the login tab
+    ui.tabs->removeTab(1);
 
     ui.window->show();
     return app.exec();
