@@ -2,25 +2,26 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <unordered_map>
 #include "include/FileOperationBase.hpp"
 #include "include/TemplateFileManager.hpp"
+#include "include/SharedFileOperation.hpp"
 #include "UI.cpp"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
     MainWindowUI ui;
-    TemplateFileManager<UploadOperation> fileManager(ui.fileList);
+    TemplateFileManager<SharedFileOperation> fileManager(ui.fileList);
     std::unordered_map<QString, QString> userDatabase;
 
     // Function to switch to files tab
     auto switchToFilesTab = [&]() {
-        // Add the files tab if it doesn't exist
         if (ui.tabs->count() < 2) {
             ui.tabs->addTab(ui.fileTab, "Files");
         }
-        ui.tabs->setCurrentIndex(1);  // Switch to files tab (index 1)
+        ui.tabs->setCurrentIndex(1);
         ui.fileList->clear();
         ui.fileList->addItem("Owned Files:");
         ui.fileList->addItem("Shared With You:");
@@ -69,6 +70,58 @@ int main(int argc, char *argv[]) {
                 ui.fileList->addItem(path);
                 QMessageBox::information(ui.window, "Uploaded", "File uploaded: " + path);
             });
+        }
+    });
+
+    QObject::connect(ui.shareButton, &QPushButton::clicked, [&]() {
+        QListWidgetItem* selectedItem = ui.fileList->currentItem();
+        if (!selectedItem) {
+            QMessageBox::warning(ui.window, "Share", "Please select a file to share.");
+            return;
+        }
+
+        QString itemText = selectedItem->text();
+        if (itemText == "Owned Files:" || itemText == "Shared With You:") {
+            return;
+        }
+
+        bool ok;
+        QString username = QInputDialog::getText(ui.window, "Share File",
+                                               "Enter username to share with:", QLineEdit::Normal,
+                                               "", &ok);
+        if (ok && !username.isEmpty()) {
+            auto operation = fileManager.createOperation(itemText);
+            if (operation->shareWith(username)) {
+                QMessageBox::information(ui.window, "Shared", "File shared with " + username);
+            } else {
+                QMessageBox::warning(ui.window, "Share Failed", "Could not share file with " + username);
+            }
+        }
+    });
+
+    QObject::connect(ui.revokeButton, &QPushButton::clicked, [&]() {
+        QListWidgetItem* selectedItem = ui.fileList->currentItem();
+        if (!selectedItem) {
+            QMessageBox::warning(ui.window, "Revoke", "Please select a file.");
+            return;
+        }
+
+        QString itemText = selectedItem->text();
+        if (itemText == "Owned Files:" || itemText == "Shared With You:") {
+            return;
+        }
+
+        bool ok;
+        QString username = QInputDialog::getText(ui.window, "Revoke Access",
+                                               "Enter username to revoke access from:", QLineEdit::Normal,
+                                               "", &ok);
+        if (ok && !username.isEmpty()) {
+            auto operation = fileManager.createOperation(itemText);
+            if (operation->revokeAccess(username)) {
+                QMessageBox::information(ui.window, "Revoked", "Access revoked from " + username);
+            } else {
+                QMessageBox::warning(ui.window, "Revoke Failed", "Could not revoke access from " + username);
+            }
         }
     });
 
