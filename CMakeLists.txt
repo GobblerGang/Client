@@ -13,9 +13,16 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
 
-add_executable(untitled5 main.cpp
-        UI.cpp
-        model.cpp)
+# Add include directory
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Add source files
+add_executable(untitled5 
+    main.cpp
+    UI.cpp
+    model.cpp
+    src/FileOperations.cpp
+)
 
 target_link_libraries(untitled5 Qt::Core Qt::Gui Qt::Widgets)
 
