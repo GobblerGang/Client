@@ -5,9 +5,12 @@
 #include <QMessageBox>
 #include <QListWidget>
 #include <QFileInfo>
+#include <QDir>
 #include <memory>
 #include <unordered_map>
-using namespace std;
+#include "include/FileEncryption.hpp"
+#include "include/User.hpp"
+#include "include/FileManager.hpp"
 
 // Abstract class
 class FileOperation {
@@ -16,86 +19,142 @@ public:
     virtual ~FileOperation() = default;
 };
 
-class User {
-protected:
-    QString username;
-    QStringList ownedFiles;
-    QStringList sharedFiles;
+// User class implementation
+User::User(const QString& name) : username(name) {
+    encryptionKey = FileEncryption::generateKey();
+}
 
-public:
-    User(const QString& name) : username(name) {}
-    virtual ~User() = default;
+void User::addFile(const QString& file) {
+    ownedFiles.append(file);
+}
 
-    virtual void addFile(const QString& file) { ownedFiles.append(file); }
-
-    void removeFile(const QString& file, bool& success) {
-        if (ownedFiles.contains(file)) {
-            ownedFiles.removeAll(file);
-            success = true;
-        } else {
-            success = false;
-        }
+void User::removeFile(const QString& file, bool& success) {
+    if (ownedFiles.contains(file)) {
+        ownedFiles.removeAll(file);
+        success = true;
+    } else {
+        success = false;
     }
+}
 
-    const QStringList& getOwnedFiles() const { return ownedFiles; }
-    const QStringList& getSharedFiles() const { return sharedFiles; }
-};
+const QStringList& User::getOwnedFiles() const {
+    return ownedFiles;
+}
 
-class AdminUser : public User {
-public:
-    AdminUser(const QString& name) : User(name) {}
-    void addFile(const QString& file) override {
-        User::addFile(file);
+const QStringList& User::getSharedFiles() const {
+    return sharedFiles;
+}
+
+const QByteArray& User::getEncryptionKey() const {
+    return encryptionKey;
+}
+
+// AdminUser implementation
+AdminUser::AdminUser(const QString& name) : User(name) {}
+
+void AdminUser::addFile(const QString& file) {
+    User::addFile(file);
+}
+
+// FileManager implementation
+FileManager::FileManager(QListWidget* list) : QObject(list), fileList(list) {
+    encryptedFilesDir = QDir::currentPath() + "/encrypted_files";
+    QDir().mkpath(encryptedFilesDir);
+}
+
+void FileManager::setUser(std::unique_ptr<User> user) {
+    currentUser = std::move(user);
+}
+
+User* FileManager::getCurrentUser() const {
+    return currentUser.get();
+}
+
+void FileManager::refreshFileList() {
+    if (!currentUser) return;
+
+    fileList->clear();
+    fileList->addItem("Owned Files:");
+    for (const QString& file : currentUser->getOwnedFiles()) {
+        fileList->addItem("  " + file);
     }
-};
-
-class FileManager {
-private:
-    unique_ptr<User> currentUser; //smart pointer
-    QListWidget* fileList;
-
-public:
-    FileManager(QListWidget* list) : fileList(list) {}
-
-    void setUser(unique_ptr<User> user) {
-        currentUser = move(user);
+    fileList->addItem("Shared With You:");
+    for (const QString& file : currentUser->getSharedFiles()) {
+        fileList->addItem("  " + file);
     }
+}
 
-    User* getCurrentUser() const {
-        return currentUser.get();
-    }
+QString FileManager::getEncryptedFilesDir() const {
+    return encryptedFilesDir;
+}
 
-    void refreshFileList() {
-        if (!currentUser) return;
-
-        fileList->clear();
-        fileList->addItem("Owned Files:");
-        for (const QString& file : currentUser->getOwnedFiles()) {
-            fileList->addItem("  " + file);
-        }
-        fileList->addItem("Shared With You:");
-        for (const QString& file : currentUser->getSharedFiles()) {
-            fileList->addItem("  " + file);
-        }
-    }
-};
-
+// UploadOperation implementation
 class UploadOperation : public FileOperation {
 private:
     QWidget* parent;
     User* user;
     QListWidget* fileList;
+    QString encryptedFilesDir;
 
 public:
     UploadOperation(QWidget* p, User* u, QListWidget* fl)
-            : parent(p), user(u), fileList(fl) {}
+        : parent(p), user(u), fileList(fl) {
+        FileManager* manager = qobject_cast<FileManager*>(fl->parent());
+        if (manager) {
+            encryptedFilesDir = manager->getEncryptedFilesDir();
+        } else {
+            encryptedFilesDir = QDir::currentPath() + "/encrypted_files";
+            QDir().mkpath(encryptedFilesDir);
+        }
+    }
 
     void execute() override {
         QString fileName = QFileDialog::getOpenFileName(parent, "Select File to Upload");
         if (!fileName.isEmpty()) {
-            QFileInfo info(fileName);
-            user->addFile(info.fileName());
-            QMessageBox::information(parent, "Uploaded", "File uploaded: " + info.fileName());
+            try {
+                QByteArray encryptedData = FileEncryption::encryptFile(fileName, user->getEncryptionKey());
+                
+                QFileInfo info(fileName);
+                QString encryptedPath = encryptedFilesDir + "/" + info.fileName() + ".enc";
+                QFile encryptedFile(encryptedPath);
+                
+                if (encryptedFile.open(QIODevice::WriteOnly)) {
+                    encryptedFile.write(encryptedData);
+                    encryptedFile.close();
+                    
+                    user->addFile(info.fileName());
+                    QMessageBox::information(parent, "Uploaded", "File encrypted and uploaded: " + info.fileName());
+                } else {
+                    QMessageBox::warning(parent, "Error", "Failed to save encrypted file");
+                }
+            } catch (const std::exception& e) {
+                QMessageBox::critical(parent, "Encryption Error", QString("Failed to encrypt file: %1").arg(e.what()));
+            }
+        }
+    }
+
+    static bool decryptAndSaveFile(const QString& encryptedPath, const QString& outputPath, const QByteArray& key) {
+        try {
+            QFile encryptedFile(encryptedPath);
+            if (!encryptedFile.open(QIODevice::ReadOnly)) {
+                return false;
+            }
+
+            QByteArray encryptedData = encryptedFile.readAll();
+            encryptedFile.close();
+
+            QByteArray decryptedData = FileEncryption::decryptFile(encryptedData, key);
+
+            QFile outputFile(outputPath);
+            if (!outputFile.open(QIODevice::WriteOnly)) {
+                return false;
+            }
+
+            outputFile.write(decryptedData);
+            outputFile.close();
+            return true;
+        } catch (const std::exception&) {
+            return false;
         }
     }
 };
