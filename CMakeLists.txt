@@ -13,6 +13,9 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
 
+# Find OpenSSL
+find_package(OpenSSL REQUIRED)
+
 # Add include directory
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -24,7 +27,13 @@ add_executable(untitled5
     src/FileOperations.cpp
 )
 
-target_link_libraries(untitled5 Qt::Core Qt::Gui Qt::Widgets)
+target_link_libraries(untitled5 
+    Qt::Core 
+    Qt::Gui 
+    Qt::Widgets
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX "")
