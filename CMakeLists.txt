@@ -16,16 +16,24 @@ find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
 # Find OpenSSL
 find_package(OpenSSL REQUIRED)
 
-# Add include directory
+# Add include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Add source files
-add_executable(untitled5 
+set(SOURCES
     main.cpp
     UI.cpp
     model.cpp
-    src/FileOperations.cpp
 )
+
+# Add header files
+set(HEADERS
+    include/FileManager.hpp
+    include/User.hpp
+    include/FileEncryption.hpp
+)
+
+add_executable(untitled5 ${SOURCES} ${HEADERS})
 
 target_link_libraries(untitled5 
     Qt::Core 
