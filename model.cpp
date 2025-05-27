@@ -11,6 +11,7 @@
 #include "include/FileEncryption.hpp"
 #include "include/User.hpp"
 #include "include/FileManager.hpp"
+#include "include/PACManager.hpp"
 
 // Abstract class
 class FileOperation {
@@ -21,7 +22,13 @@ public:
 
 // User class implementation
 User::User(const QString& name) : username(name) {
+    // Generate encryption key
     encryptionKey = FileEncryption::generateKey();
+    
+    // Generate RSA key pair for PAC
+    auto [priv, pub] = PACManager::generateKeyPair();
+    privateKey = priv;
+    publicKey = pub;
 }
 
 void User::addFile(const QString& file) {
@@ -47,6 +54,14 @@ const QStringList& User::getSharedFiles() const {
 
 const QByteArray& User::getEncryptionKey() const {
     return encryptionKey;
+}
+
+PAC User::createOperationPAC(const QString& operation) const {
+    return PACManager::createPAC(username, operation, privateKey);
+}
+
+bool User::verifyOperationPAC(const PAC& pac) const {
+    return PACManager::verifyPAC(pac, publicKey);
 }
 
 // AdminUser implementation
@@ -112,6 +127,13 @@ public:
         QString fileName = QFileDialog::getOpenFileName(parent, "Select File to Upload");
         if (!fileName.isEmpty()) {
             try {
+                // Create PAC for upload operation
+                auto pac = user->createOperationPAC("UPLOAD");
+                if (!user->verifyOperationPAC(pac)) {
+                    QMessageBox::critical(parent, "Security Error", "Operation verification failed");
+                    return;
+                }
+
                 QByteArray encryptedData = FileEncryption::encryptFile(fileName, user->getEncryptionKey());
                 
                 QFileInfo info(fileName);
@@ -128,7 +150,7 @@ public:
                     QMessageBox::warning(parent, "Error", "Failed to save encrypted file");
                 }
             } catch (const std::exception& e) {
-                QMessageBox::critical(parent, "Encryption Error", QString("Failed to encrypt file: %1").arg(e.what()));
+                QMessageBox::critical(parent, "Error", QString("Operation failed: %1").arg(e.what()));
             }
         }
     }
