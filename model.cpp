@@ -12,6 +12,7 @@
 #include "include/User.hpp"
 #include "include/FileManager.hpp"
 #include "include/PACManager.hpp"
+#include "include/X3DH.hpp"
 
 // Abstract class
 class FileOperation {
@@ -29,6 +30,28 @@ User::User(const QString& name) : username(name) {
     auto [priv, pub] = PACManager::generateKeyPair();
     privateKey = priv;
     publicKey = pub;
+
+    // Generate X3DH keys
+    generateX3DHKeys();
+}
+
+void User::generateX3DHKeys() {
+    // Generate identity key pair
+    auto identityKeys = X3DH::generateKeyPair();
+    identityPrivateKey = identityKeys.privateKey;
+    identityPublicKey = identityKeys.publicKey;
+
+    // Generate ephemeral key pair
+    auto ephemeralKeys = X3DH::generateKeyPair();
+    ephemeralPrivateKey = ephemeralKeys.privateKey;
+    ephemeralPublicKey = ephemeralKeys.publicKey;
+
+    // Generate pre-key bundle
+    preKeyBundle = X3DH::generatePreKeyBundle();
+}
+
+QByteArray User::performKeyExchange(const X3DH::PreKeyBundle& peerBundle) {
+    return X3DH::performX3DH(identityPrivateKey, ephemeralPrivateKey, peerBundle);
 }
 
 void User::addFile(const QString& file) {
