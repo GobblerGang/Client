@@ -1,14 +1,23 @@
 cmake_minimum_required(VERSION 3.27)
 project(untitled5)
 
-set(CMAKE_PREFIX_PATH "" CACHE PATH "Additional CMake search path")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/local_config.cmake")
+    include("${CMAKE_CURRENT_SOURCE_DIR}/local_config.cmake")
+endif()
+
+if(NOT DEFINED CMAKE_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "" CACHE PATH "Additional CMake search path")
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(Qt6_DIR "" CACHE PATH "Path to Qt6 CMake directory")
+if(NOT DEFINED Qt6_DIR)
+    set(Qt6_DIR "" CACHE PATH "Path to Qt6 CMake directory")
+endif()
+
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
