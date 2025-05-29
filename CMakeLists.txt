@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
-project(untitled5)
+project(CPlusPlusClient)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/local_config.cmake")
     include("${CMAKE_CURRENT_SOURCE_DIR}/local_config.cmake")
