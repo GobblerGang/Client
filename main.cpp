@@ -15,17 +15,61 @@ int main(int argc, char *argv[]) {
     MainWindowUI ui;
     TemplateFileManager<SharedFileOperation> fileManager(ui.fileList);
     std::unordered_map<QString, QString> userDatabase;
+    QString currentUser; // Track the currently logged in user
 
-    // Function to switch to files tab
-    auto switchToFilesTab = [&]() {
-        if (ui.tabs->count() < 2) {
-            ui.tabs->addTab(ui.fileTab, "Files");
+    // Function to switch to login tab
+    auto switchToLoginTab = [&]() {
+        // Clear current user
+        currentUser.clear();
+        
+        // Clear the input fields
+        ui.usernameEdit->clear();
+        ui.passwordEdit->clear();
+        ui.statusLabel->clear();
+        
+        // Remove all tabs
+        while (ui.tabs->count() > 0) {
+            ui.tabs->removeTab(0);
         }
-        ui.tabs->setCurrentIndex(1);
+        
+        // Add login tab
+        ui.tabs->addTab(ui.authTab, "Login");
+        
+        // Reset window title
+        ui.window->setWindowTitle("GG File Sharing");
+    };
+
+    // Function to switch to files tab and hide login tab
+    auto switchToFilesTab = [&]() {
+        // Remove the login tab
+        ui.tabs->removeTab(0);
+        
+        // Add the files tab if it's not already there
+        ui.tabs->addTab(ui.fileTab, "Files");
+        
+        // Clear and populate file list
         ui.fileList->clear();
         ui.fileList->addItem("Owned Files:");
         ui.fileList->addItem("Shared With You:");
+        
+        // Set window title to include username
+        ui.window->setWindowTitle("GG File Sharing - " + currentUser);
     };
+    
+    // Connect logout button
+    QObject::connect(ui.logoutButton, &QPushButton::clicked, [&]() {
+        // Ask for confirmation
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            ui.window, 
+            "Logout Confirmation", 
+            "Are you sure you want to logout?",
+            QMessageBox::Yes | QMessageBox::No
+        );
+        
+        if (reply == QMessageBox::Yes) {
+            switchToLoginTab();
+        }
+    });
 
     QObject::connect(ui.loginButton, &QPushButton::clicked, [&]() {
         QString username = ui.usernameEdit->text().trimmed();
@@ -38,6 +82,7 @@ int main(int argc, char *argv[]) {
 
         auto it = userDatabase.find(username);
         if (it != userDatabase.end() && it->second == password) {
+            currentUser = username; // Set current user
             ui.statusLabel->setText("Login successful!");
             switchToFilesTab();
         } else {
@@ -55,11 +100,14 @@ int main(int argc, char *argv[]) {
         }
 
         if (userDatabase.find(username) != userDatabase.end()) {
-            ui.statusLabel->setText("User already exists.");
+            ui.statusLabel->setText("User already exists. Please login instead.");
         } else {
             userDatabase[username] = password;
-            ui.statusLabel->setText("Signup successful! You are now logged in.");
-            switchToFilesTab();
+            ui.statusLabel->setText("Signup successful! You can now login with your credentials.");
+            
+            // Clear the input fields after successful signup
+            ui.usernameEdit->clear();
+            ui.passwordEdit->clear();
         }
     });
 
@@ -142,8 +190,11 @@ int main(int argc, char *argv[]) {
         QMessageBox::information(ui.window, "Deleted", "File removed.");
     });
 
-    // Initially show only the login tab
-    ui.tabs->removeTab(1);
+    // Initially only show the login tab and remove the files tab
+    while (ui.tabs->count() > 0) {
+        ui.tabs->removeTab(0);
+    }
+    ui.tabs->addTab(ui.authTab, "Login");
 
     ui.window->show();
     return app.exec();

@@ -29,6 +29,7 @@ public:
     QPushButton* shareButton;
     QPushButton* revokeButton;
     QPushButton* deleteButton;
+    QPushButton* logoutButton; // New logout button
 
     MainWindowUI() {
         window = new QWidget();
@@ -132,6 +133,7 @@ public:
         );
         fileLayout->addWidget(fileList);
 
+        // Add a horizontal layout for the file operation buttons
         QHBoxLayout* buttonsLayout = new QHBoxLayout();
         buttonsLayout->setSpacing(15);
 
@@ -153,6 +155,25 @@ public:
         }
 
         fileLayout->addLayout(buttonsLayout);
+        
+        // Add logout button in a separate horizontal layout
+        QHBoxLayout* logoutLayout = new QHBoxLayout();
+        logoutLayout->setContentsMargins(0, 10, 0, 0);
+        
+        // Add a spacer to push the logout button to the right
+        logoutLayout->addStretch();
+        
+        // Create logout button
+        logoutButton = new QPushButton("Logout");
+        logoutButton->setFixedSize(110, 35);
+        logoutButton->setStyleSheet(
+            "QPushButton { background-color: #E74C3C; color: white; border-radius: 6px; font-weight: bold; }"
+            "QPushButton:hover { background-color: #C0392B; }"
+            "QPushButton:pressed { background-color: #A93226; }"
+        );
+        
+        logoutLayout->addWidget(logoutButton);
+        fileLayout->addLayout(logoutLayout);
 
         QVBoxLayout* mainLayout = new QVBoxLayout();
         mainLayout->addWidget(tabs);
