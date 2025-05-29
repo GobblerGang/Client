@@ -15,7 +15,7 @@ using OperationCallback = std::function<void(const QString&)>;
 
 // Abstract base class with pure virtual functions
 class FileOperationBase {
-protected:
+protected: //access specifier
     QString filePath;
     std::vector<QString> operationHistory;
     OperationCallback callback;

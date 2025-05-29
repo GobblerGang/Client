@@ -16,9 +16,9 @@
 
 // Abstract class
 class FileOperation {
-public:
-    virtual void execute() = 0;
-    virtual ~FileOperation() = default;
+public: // access specifier
+    virtual void execute() = 0; //pure virtual function
+    virtual ~FileOperation() = default; //virtual destructor
 };
 
 // User class implementation
@@ -126,16 +126,16 @@ QString FileManager::getEncryptedFilesDir() const {
     return encryptedFilesDir;
 }
 
-// UploadOperation implementation
+// UploadOperation implementation, implements from FileOperation
 class UploadOperation : public FileOperation {
-private:
+private: //access specifier
     QWidget* parent;
     User* user;
     QListWidget* fileList;
     QString encryptedFilesDir;
 
 public:
-    UploadOperation(QWidget* p, User* u, QListWidget* fl)
+    UploadOperation(QWidget* p, User* u, QListWidget* fl) //Constructor
         : parent(p), user(u), fileList(fl) {
         FileManager* manager = qobject_cast<FileManager*>(fl->parent());
         if (manager) {
@@ -146,7 +146,7 @@ public:
         }
     }
 
-    void execute() override {
+    void execute() override { //overrides pure virtual function
         QString fileName = QFileDialog::getOpenFileName(parent, "Select File to Upload");
         if (!fileName.isEmpty()) {
             try {

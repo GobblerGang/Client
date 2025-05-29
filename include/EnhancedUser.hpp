@@ -9,11 +9,11 @@ private:
     QString username;
     QStringList ownedFiles;
     QStringList sharedFiles;
-    std::vector<std::shared_ptr<EnhancedUser>> sharedWith;
+    std::vector<std::shared_ptr<EnhancedUser>> sharedWith; //smart pointer
 
 public:
     // Constructor
-    explicit EnhancedUser(const QString& name) : username(name) {}
+    explicit EnhancedUser(const QString& name) : username(name) {}  // name is passed by value
     
     // Copy constructor
     EnhancedUser(const EnhancedUser& other) 

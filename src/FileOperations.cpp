@@ -54,7 +54,7 @@ inline bool validateFile(const QString& path) {
 }
 
 // Function that demonstrates dynamic memory allocation
-std::unique_ptr<QFile> createFileHandle(const QString& path) {
+std::unique_ptr<QFile> createFileHandle(const QString& path) { //smart pointer
     return std::make_unique<QFile>(path);
 }
 

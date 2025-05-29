@@ -27,8 +27,8 @@ public:
     explicit User(const QString& name);
     virtual ~User() = default;
 
-    virtual void addFile(const QString& file);
-    void removeFile(const QString& file, bool& success);
+    virtual void addFile(const QString& file); //Qstring file passed by reference
+    void removeFile(const QString& file, bool& success); //declared and defined function
     const QStringList& getOwnedFiles() const;
     const QStringList& getSharedFiles() const;
     const QByteArray& getEncryptionKey() const;

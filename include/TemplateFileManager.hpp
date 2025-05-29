@@ -110,6 +110,7 @@ public:
 };
 
 // Specialized template for UploadOperation
+// Class template
 template<>
 class TemplateFileManager<UploadOperation> {
 private:
