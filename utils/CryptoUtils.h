@@ -44,17 +44,18 @@ public:
     );
 
     static PAC create_pac(
-        const std::string& file_id,
-        const std::string& recipient_id,
-        const std::string& issuer_id,
-        const std::vector<uint8_t>& encrypted_file_key,
-        const std::vector<uint8_t>& encrypted_file_key_nonce,
-        const std::vector<uint8_t>& sender_ephemeral_pubkey,
+        const std::string &file_id,
+        const std::string &recipient_id,
+        const std::string &issuer_id,
+        const std::vector<uint8_t> &encrypted_file_key,
+        const std::vector<uint8_t> &encrypted_file_key_nonce,
+        const std::vector<uint8_t> &sender_ephemeral_pubkey,
         int64_t valid_until,
-        EVP_PKEY* identity_key, // Ed25519
-        const std::string& filename,
-        const std::string& mime_type
+        EVP_MD_CTX *identity_key,
+        // Ed25519
+        const std::string &filename,
+        const std::string &mime_type
     );
 
-    static bool verify_pac(const nlohmann::json& pac_json, EVP_PKEY* issuer_public_key); // Ed25519
+    static bool verify_pac(const nlohmann::json &pac_json, EVP_MD_CTX *issuer_public_key); // Ed25519
 };

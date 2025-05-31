@@ -25,6 +25,7 @@ find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
 # Find OpenSSL
 find_package(OpenSSL REQUIRED)
 
+
 # Add include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 

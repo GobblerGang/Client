@@ -14,7 +14,9 @@
 #include <openssl/sha.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
-#include <openssl/ed25519.h>
+#include <openssl/evp.h>
+#include <openssl/obj_mac.h>
+
 #include <openssl/core_names.h>
 #include <openssl/params.h>
 
@@ -124,11 +126,11 @@ tuple<EVP_PKEY*, EVP_PKEY*, std::vector<uint8_t>> CryptoUtils::generate_signed_p
 
 std::vector<uint8_t> CryptoUtils::perform_3xdh_sender(EVP_PKEY* id_priv, EVP_PKEY* eph_priv, EVP_PKEY* r_id_pub, EVP_PKEY* r_spk_pub, EVP_PKEY* r_otk_pub) {
     std::vector<uint8_t> shared;
+    size_t len = 32;
     auto dh = [&](EVP_PKEY* priv, EVP_PKEY* pub) {
         EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(priv, nullptr);
         EVP_PKEY_derive_init(ctx);
         EVP_PKEY_derive_set_peer(ctx, pub);
-        size_t len = 32;
         std::vector<uint8_t> out(len);
         EVP_PKEY_derive(ctx, out.data(), &len);
         shared.insert(shared.end(), out.begin(), out.end());
@@ -144,7 +146,7 @@ std::vector<uint8_t> CryptoUtils::perform_3xdh_sender(EVP_PKEY* id_priv, EVP_PKE
     EVP_PKEY_derive_init(hkdf_ctx);
     EVP_PKEY_CTX_set_hkdf_md(hkdf_ctx, EVP_sha256());
     EVP_PKEY_CTX_set1_hkdf_key(hkdf_ctx, shared.data(), shared.size());
-    EVP_PKEY_CTX_add1_hkdf_info(hkdf_ctx, "3XDH key agreement", strlen("3XDH key agreement"));
+    EVP_PKEY_CTX_add1_hkdf_info(hkdf_ctx, reinterpret_cast<const unsigned char *>("3XDH key agreement"), strlen("3XDH key agreement"));
     EVP_PKEY_derive(hkdf_ctx, key.data(), &len);
     EVP_PKEY_CTX_free(hkdf_ctx);
     return key;
@@ -154,7 +156,10 @@ std::vector<uint8_t> CryptoUtils::perform_3xdh_recipient(EVP_PKEY* id_priv, EVP_
     return perform_3xdh_sender(id_priv, spk_priv, s_eph_pub, s_id_pub, otk_priv);
 }
 
-PAC CryptoUtils::create_pac(const std::string& file_id, const std::string& recipient_id, const std::string& issuer_id, const std::vector<uint8_t>& encrypted_file_key, const std::vector<uint8_t>& encrypted_file_key_nonce, const std::vector<uint8_t>& sender_ephemeral_pubkey, int64_t valid_until, EVP_PKEY* identity_key, const std::string& filename, const std::string& mime_type) {
+PAC CryptoUtils::create_pac(const std::string &file_id, const std::string &recipient_id, const std::string &issuer_id, const std::vector<uint8_t> &
+                            encrypted_file_key, const std::vector<uint8_t> &encrypted_file_key_nonce, const std::vector<uint8_t> &
+                            sender_ephemeral_pubkey, int64_t valid_until, EVP_MD_CTX *identity_key, const std::string &filename, const std::string
+                            &mime_type) {
     nlohmann::json pac_json = {
         {"file_id", file_id},
         {"recipient_id", recipient_id},
@@ -179,7 +184,7 @@ PAC CryptoUtils::create_pac(const std::string& file_id, const std::string& recip
     return PAC::from_json(pac_json);
 }
 
-bool CryptoUtils::verify_pac(const nlohmann::json& pac_json, EVP_PKEY* issuer_public_key) {
+bool CryptoUtils::verify_pac(const nlohmann::json &pac_json, EVP_MD_CTX *issuer_public_key) {
     try {
         nlohmann::json copy = pac_json;
         std::vector<uint8_t> signature = copy["signature"].get_binary();
