@@ -5,16 +5,11 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/kdf.h>
-#include <openssl/err.h>
 #include <stdexcept>
-#include <cstring>
 #include <sstream>
-#include <iomanip>
 #include <nlohmann/json.hpp>
-#include <openssl/sha.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
-#include <openssl/evp.h>
 #include <openssl/obj_mac.h>
 
 #include <openssl/core_names.h>

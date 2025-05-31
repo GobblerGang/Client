@@ -48,6 +48,8 @@ set(HEADERS
         utils/CryptoUtils.h
         utils/MasterKey.h
         utils/MasterKey.cpp
+        utils/VaultManager.h
+        utils/VaultManager.cpp
 
 )
 
