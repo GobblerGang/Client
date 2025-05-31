@@ -47,11 +47,11 @@ set(HEADERS
         utils/pac.cpp
         utils/CryptoUtils.h
         utils/MasterKey.h
+        utils/MasterKey.cpp
 
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
-)
 target_link_libraries(CPlusPlusClient
     Qt::Core 
     Qt::Gui 
