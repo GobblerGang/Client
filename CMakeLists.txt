@@ -34,6 +34,7 @@ set(SOURCES
     main.cpp
     UI.cpp
     model.cpp
+        utils/CryptoUtils.cpp
 )
 
 # Add header files
@@ -45,19 +46,26 @@ set(HEADERS
         utils/pac.h
         utils/pac.cpp
         utils/CryptoUtils.h
-        utils/CryptoUtils.cpp
+
 )
 
-add_executable(untitled5 ${SOURCES} ${HEADERS})
-
-target_link_libraries(untitled5 
+add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
+target_link_libraries(test_crypto
+        Qt::Core
+        Qt::Gui
+        Qt::Widgets
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ${ARGON2_LIB}
+)
+target_link_libraries(CPlusPlusClient
     Qt::Core 
     Qt::Gui 
     Qt::Widgets
     OpenSSL::SSL
     OpenSSL::Crypto
+        ${ARGON2_LIB}
 )
-
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX "")
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
