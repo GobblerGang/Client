@@ -39,7 +39,12 @@ set(SOURCES
 set(HEADERS
     include/FileManager.hpp
     include/User.hpp
+        include/nlohmann/json.hpp
     include/FileEncryption.hpp
+        utils/pac.h
+        utils/pac.cpp
+        utils/CryptoUtils.h
+        utils/CryptoUtils.cpp
 )
 
 add_executable(untitled5 ${SOURCES} ${HEADERS})

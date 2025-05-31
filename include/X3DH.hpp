@@ -2,13 +2,8 @@
 
 #include <QByteArray>
 #include <QString>
-#include <memory>
-#include <unordered_map>
 #include <openssl/evp.h>
-#include <openssl/ec.h>
-#include <openssl/ecdh.h>
 #include <openssl/rand.h>
-#include <openssl/err.h>
 #include <openssl/kdf.h>
 #include <stdexcept>
 
