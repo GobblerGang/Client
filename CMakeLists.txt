@@ -46,17 +46,11 @@ set(HEADERS
         utils/pac.h
         utils/pac.cpp
         utils/CryptoUtils.h
+        utils/MasterKey.h
 
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
-target_link_libraries(test_crypto
-        Qt::Core
-        Qt::Gui
-        Qt::Widgets
-        OpenSSL::SSL
-        OpenSSL::Crypto
-        ${ARGON2_LIB}
 )
 target_link_libraries(CPlusPlusClient
     Qt::Core 
