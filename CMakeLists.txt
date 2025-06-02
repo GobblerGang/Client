@@ -50,6 +50,10 @@ set(HEADERS
         utils/MasterKey.cpp
         utils/VaultManager.h
         utils/VaultManager.cpp
+        utils/Ed25519Key.h
+        utils/Ed25519Key.cpp
+        utils/X25519Key.h
+        utils/X25519Key.cpp
 
 )
 
