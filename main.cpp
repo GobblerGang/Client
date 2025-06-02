@@ -11,113 +11,138 @@ int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
     MainWindowUI ui;
-    std::unordered_map<QString, QString> userDatabase;
-    QString currentUser; // Track the currently logged in user
+    QString currentUser;
 
-    // Function to switch to login tab
-    auto switchToLoginTab = [&]() {
-        // Clear current user
+    // Function to switch to login/signup tab
+    auto switchToAuthTabs = [&]() {
         currentUser.clear();
-        
-        // Clear the input fields
-        ui.usernameEdit->clear();
-        ui.passwordEdit->clear();
-        ui.statusLabel->clear();
-        
-        // Remove all tabs
+
+        ui.loginUsernameEdit->clear();
+        ui.loginPasswordEdit->clear();
+        ui.loginStatusLabel->clear();
+
+        ui.signupUsernameEdit->clear();
+        ui.signupPasswordEdit->clear();
+        ui.signupEmailEdit->clear();
+        ui.signupStatusLabel->clear();
+
         while (ui.tabs->count() > 0) {
             ui.tabs->removeTab(0);
         }
-        
-        // Add login tab
-        ui.tabs->addTab(ui.authTab, "Login");
-        
-        // Reset window title
+
+        ui.tabs->addTab(ui.loginTab, "Login");
+        ui.tabs->addTab(ui.signupTab, "Sign Up");
+
         ui.window->setWindowTitle("GG File Sharing");
     };
 
-    // Function to switch to files tab and hide login tab
+    // Function to switch to files tab
     auto switchToFilesTab = [&]() {
-        // Remove the login tab
-        ui.tabs->removeTab(0);
-        
-        // Add the files tab if it's not already there
+        while (ui.tabs->count() > 0) {
+            ui.tabs->removeTab(0);
+        }
+
         ui.tabs->addTab(ui.fileTab, "Files");
-        
-        // Clear and populate file list
+
         ui.fileList->clear();
         ui.fileList->addItem("Owned Files:");
         ui.fileList->addItem("Shared With You:");
-        
-        // Set window title to include username
+
         ui.window->setWindowTitle("GG File Sharing - " + currentUser);
     };
-    
-    // Connect logout button
+
+    // Logout
     QObject::connect(ui.logoutButton, &QPushButton::clicked, [&]() {
-        // Ask for confirmation
         QMessageBox::StandardButton reply = QMessageBox::question(
-            ui.window, 
-            "Logout Confirmation", 
+            ui.window,
+            "Logout Confirmation",
             "Are you sure you want to logout?",
             QMessageBox::Yes | QMessageBox::No
         );
-        
         if (reply == QMessageBox::Yes) {
-            switchToLoginTab();
+            switchToAuthTabs();
         }
     });
 
+    // Login
     QObject::connect(ui.loginButton, &QPushButton::clicked, [&]() {
-        QString username = ui.usernameEdit->text().trimmed();
-        QString password = ui.passwordEdit->text().trimmed();
+        QString username = ui.loginUsernameEdit->text().trimmed();
+        QString password = ui.loginPasswordEdit->text().trimmed();
 
         if (username.isEmpty() || password.isEmpty()) {
-            ui.statusLabel->setText("Please enter both username and password.");
+            ui.loginStatusLabel->setText("Please enter both username and password.");
             return;
         }
 
-        auto it = userDatabase.find(username);
-        if (it != userDatabase.end() && it->second == password) {
-            currentUser = username; // Set current user
-            ui.statusLabel->setText("Login successful!");
-            switchToFilesTab();
-        } else {
-            ui.statusLabel->setText("Incorrect username or password.");
+        try {
+            auto users = db().get_all<User>(
+                where(c(&User::username) == username.toStdString())
+            );
+
+            if (users.empty()) {
+                ui.loginStatusLabel->setText("User not found. Please check your username.");
+                return;
+            }
+
+            const User& user = users.front();
+
+            // Replace this with secure password check
+            if (user.salt == password.toStdString()) {
+                currentUser = username;
+                ui.loginStatusLabel->setText("Login successful!");
+                switchToFilesTab();
+            } else {
+                ui.loginStatusLabel->setText("Incorrect password. Please try again.");
+            }
+        } catch (const std::exception& e) {
+            ui.loginStatusLabel->setText("Login error: " + QString(e.what()));
         }
     });
 
+    // Signup
     QObject::connect(ui.signupButton, &QPushButton::clicked, [&]() {
-        QString username = ui.usernameEdit->text().trimmed();
-        QString password = ui.passwordEdit->text().trimmed();
+        QString username = ui.signupUsernameEdit->text().trimmed();
+        QString password = ui.signupPasswordEdit->text().trimmed();
+        QString email = ui.signupEmailEdit->text().trimmed();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            ui.statusLabel->setText("Please enter both username and password.");
+        if (username.isEmpty() || password.isEmpty() || email.isEmpty()) {
+            ui.signupStatusLabel->setText("All fields are required.");
             return;
         }
 
-        if (userDatabase.find(username) != userDatabase.end()) {
-            ui.statusLabel->setText("User already exists. Please login instead.");
-        } else {
-            userDatabase[username] = password;
-            ui.statusLabel->setText("Signup successful! You can now login with your credentials.");
-            
-            // Clear the input fields after successful signup
-            ui.usernameEdit->clear();
-            ui.passwordEdit->clear();
+        try {
+            auto existing = db().get_all<User>(
+                where(c(&User::username) == username.toStdString())
+            );
+
+            if (!existing.empty()) {
+                ui.signupStatusLabel->setText("Username already exists. Please choose another.");
+                return;
+            }
+
+            User newUser;
+            newUser.username = username.toStdString();
+            newUser.salt = password.toStdString(); // Replace with hashed password
+            newUser.email = email.toStdString();
+
+            db().insert(newUser);
+
+            ui.signupStatusLabel->setText("Signup successful! You can now log in.");
+            ui.signupUsernameEdit->clear();
+            ui.signupPasswordEdit->clear();
+            ui.signupEmailEdit->clear();
+        } catch (const std::exception& e) {
+            ui.signupStatusLabel->setText("Signup error: " + QString(e.what()));
         }
     });
 
+    // Upload
     QObject::connect(ui.uploadButton, &QPushButton::clicked, [&]() {
         QString fileName = QFileDialog::getOpenFileName(ui.window, "Select File to Upload");
-        // if (!fileName.isEmpty()) {
-        //     fileManager.processFile(fileName, [&](const QString& path) {
-        //         ui.fileList->addItem(path);
-        //         QMessageBox::information(ui.window, "Uploaded", "File uploaded: " + path);
-        //     });
-        // }
+        // File upload logic
     });
 
+    // Share
     QObject::connect(ui.shareButton, &QPushButton::clicked, [&]() {
         QListWidgetItem* selectedItem = ui.fileList->currentItem();
         if (!selectedItem) {
@@ -126,24 +151,16 @@ int main(int argc, char *argv[]) {
         }
 
         QString itemText = selectedItem->text();
-        if (itemText == "Owned Files:" || itemText == "Shared With You:") {
-            return;
-        }
+        if (itemText == "Owned Files:" || itemText == "Shared With You:") return;
 
         bool ok;
         QString username = QInputDialog::getText(ui.window, "Share File",
-                                               "Enter username to share with:", QLineEdit::Normal,
-                                               "", &ok);
-        // if (ok && !username.isEmpty()) {
-        //     auto operation = fileManager.createOperation(itemText);
-        //     if (operation->shareWith(username)) {
-        //         QMessageBox::information(ui.window, "Shared", "File shared with " + username);
-        //     } else {
-        //         QMessageBox::warning(ui.window, "Share Failed", "Could not share file with " + username);
-        //     }
-        // }
+                                                 "Enter username to share with:", QLineEdit::Normal,
+                                                 "", &ok);
+        // Share logic
     });
 
+    // Revoke
     QObject::connect(ui.revokeButton, &QPushButton::clicked, [&]() {
         QListWidgetItem* selectedItem = ui.fileList->currentItem();
         if (!selectedItem) {
@@ -152,24 +169,16 @@ int main(int argc, char *argv[]) {
         }
 
         QString itemText = selectedItem->text();
-        if (itemText == "Owned Files:" || itemText == "Shared With You:") {
-            return;
-        }
+        if (itemText == "Owned Files:" || itemText == "Shared With You:") return;
 
         bool ok;
         QString username = QInputDialog::getText(ui.window, "Revoke Access",
-                                               "Enter username to revoke access from:", QLineEdit::Normal,
-                                               "", &ok);
-        // if (ok && !username.isEmpty()) {
-        //     auto operation = fileManager.createOperation(itemText);
-        //     if (operation->revokeAccess(username)) {
-        //         QMessageBox::information(ui.window, "Revoked", "Access revoked from " + username);
-        //     } else {
-        //         QMessageBox::warning(ui.window, "Revoke Failed", "Could not revoke access from " + username);
-        //     }
-        // }
+                                                 "Enter username to revoke access from:", QLineEdit::Normal,
+                                                 "", &ok);
+        // Revoke logic
     });
 
+    // Delete
     QObject::connect(ui.deleteButton, &QPushButton::clicked, [&]() {
         QListWidgetItem* selectedItem = ui.fileList->currentItem();
         if (!selectedItem) {
@@ -178,21 +187,13 @@ int main(int argc, char *argv[]) {
         }
 
         QString itemText = selectedItem->text();
-        if (itemText == "Owned Files:" || itemText == "Shared With You:") {
-            return;
-        }
-        //
-        // fileManager.processFileWithPolicy<DefaultPolicy>(itemText);
-        // delete ui.fileList->takeItem(ui.fileList->row(selectedItem));
-        // QMessageBox::information(ui.window, "Deleted", "File removed.");
+        if (itemText == "Owned Files:" || itemText == "Shared With You:") return;
+
+        // Delete logic
     });
 
-    // Initially only show the login tab and remove the files tab
-    while (ui.tabs->count() > 0) {
-        ui.tabs->removeTab(0);
-    }
-    ui.tabs->addTab(ui.authTab, "Login");
-
+    // Initialize with Login + Signup tabs
+    switchToAuthTabs();
     ui.window->show();
     return app.exec();
 }
