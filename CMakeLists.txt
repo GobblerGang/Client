@@ -25,6 +25,7 @@ find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
 # Find OpenSSL
 find_package(OpenSSL REQUIRED)
 
+find_package(SQLite3 REQUIRED)
 
 # Add include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -40,6 +41,7 @@ set(SOURCES
 set(HEADERS
         include/User.hpp
         include/nlohmann/json.hpp
+        include/sqlite_orm/sqlite_orm.h
         utils/PAC.h
         utils/PAC.cpp
         utils/CryptoUtils.h
@@ -52,6 +54,9 @@ set(HEADERS
         utils/Ed25519Key.cpp
         utils/X25519Key.h
         utils/X25519Key.cpp
+        include/database/models.h
+        include/database/schema.hpp
+        include/database/db_instance.h
 
 )
 
@@ -63,6 +68,7 @@ target_link_libraries(CPlusPlusClient
     OpenSSL::SSL
     OpenSSL::Crypto
         ${ARGON2_LIB}
+        ${SQLite3_LIBRARIES}
 )
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX "")

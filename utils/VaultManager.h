@@ -1,10 +1,9 @@
 #pragma once
-
+#include "database/models.h"
 #include <string>
 #include <vector>
 #include <map>
 #include <optional>
-#include <User.hpp>
 #include "X25519Key.h"
 
 // Forward declarations for key types

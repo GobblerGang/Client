@@ -61,15 +61,15 @@ std::vector<uint8_t> VaultManager::base64_decode(const std::string& input) {
 
 std::map<std::string, std::string> VaultManager::get_user_vault(const User& user) {
     return {
-            {"salt", user.salt.toStdString()},
-            {"identity_key_public", user.identity_key_public.toStdString()},
-            {"signed_prekey_public", user.signed_prekey_public.toStdString()},
-            {"signed_prekey_signature", user.signed_prekey_signature.toStdString()},
-            {"identity_key_private_enc", user.identity_key_private_enc.toStdString()},
-            {"identity_key_private_nonce", user.identity_key_private_nonce.toStdString()},
-            {"signed_prekey_private_enc", user.signed_prekey_private_enc.toStdString()},
-            {"signed_prekey_private_nonce", user.signed_prekey_private_nonce.toStdString()},
-            {"opks", user.opks_json.isEmpty() ? "[]" : user.opks_json.toStdString()}
+            {"salt", user.salt},
+            {"identity_key_public", user.identity_key_public},
+            {"signed_prekey_public", user.signed_prekey_public},
+            {"signed_prekey_signature", user.signed_prekey_signature},
+            {"identity_key_private_enc", user.identity_key_private_enc},
+            {"identity_key_private_nonce", user.identity_key_private_nonce},
+            {"signed_prekey_private_enc", user.signed_prekey_private_enc},
+            {"signed_prekey_private_nonce", user.signed_prekey_private_nonce},
+            {"opks", user.opks_json.empty() ? "[]" : user.opks_json}
     };
 }
 
