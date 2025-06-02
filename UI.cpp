@@ -1,6 +1,3 @@
-#pragma once
-
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
 #include <QLineEdit>

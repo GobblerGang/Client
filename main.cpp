@@ -10,7 +10,7 @@
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
-    MainWindowUI ui;
+    const MainWindowUI ui;
     QString currentUser;
 
     // Function to switch to login/signup tab
