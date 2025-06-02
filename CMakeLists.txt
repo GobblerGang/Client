@@ -14,6 +14,21 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+# Add compiler flags to suppress specific warnings
+if(CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang|GNU")
+    # Add flags for Clang/GCC
+    add_compile_options(
+        -Wno-deprecated-declarations   # Suppress warnings about deprecated C++17 features
+        -Wno-c++20-extensions          # Suppress warnings about C++20 extensions
+        -Wno-c++26-extensions          # Suppress warnings about C++26 extensions
+    )
+elseif(MSVC)
+    # Add flags for MSVC
+    add_compile_options(
+        /wd4996  # Suppress warnings about deprecated functions
+    )
+endif()
+
 if(NOT DEFINED Qt6_DIR)
     set(Qt6_DIR "" CACHE PATH "Path to Qt6 CMake directory")
 endif()
