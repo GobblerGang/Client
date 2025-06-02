@@ -172,9 +172,7 @@ std::vector<OPKPair> VaultManager::keypairs_from_opk_bytes(
 
     std::vector<OPKPair> opk_keypairs;
     for (const auto& [priv_bytes, pub_bytes] : decrypted_opks) {
-        OPKPair pair{};
-        pair.private_key = X25519PrivateKey(priv_bytes);
-        pair.public_key = X25519PublicKey(pub_bytes);
+        OPKPair pair{X25519PrivateKey(priv_bytes), X25519PublicKey(pub_bytes)};
         opk_keypairs.push_back(pair);
     }
     return opk_keypairs;

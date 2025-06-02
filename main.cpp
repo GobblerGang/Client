@@ -1,19 +1,14 @@
 #include <QApplication>
-#include <QMainWindow>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <unordered_map>
-#include "include/FileOperationBase.hpp"
-#include "include/TemplateFileManager.hpp"
-#include "include/SharedFileOperation.hpp"
 #include "UI.cpp"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
     MainWindowUI ui;
-    TemplateFileManager<SharedFileOperation> fileManager(ui.fileList);
     std::unordered_map<QString, QString> userDatabase;
     QString currentUser; // Track the currently logged in user
 
@@ -113,12 +108,12 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(ui.uploadButton, &QPushButton::clicked, [&]() {
         QString fileName = QFileDialog::getOpenFileName(ui.window, "Select File to Upload");
-        if (!fileName.isEmpty()) {
-            fileManager.processFile(fileName, [&](const QString& path) {
-                ui.fileList->addItem(path);
-                QMessageBox::information(ui.window, "Uploaded", "File uploaded: " + path);
-            });
-        }
+        // if (!fileName.isEmpty()) {
+        //     fileManager.processFile(fileName, [&](const QString& path) {
+        //         ui.fileList->addItem(path);
+        //         QMessageBox::information(ui.window, "Uploaded", "File uploaded: " + path);
+        //     });
+        // }
     });
 
     QObject::connect(ui.shareButton, &QPushButton::clicked, [&]() {
@@ -137,14 +132,14 @@ int main(int argc, char *argv[]) {
         QString username = QInputDialog::getText(ui.window, "Share File",
                                                "Enter username to share with:", QLineEdit::Normal,
                                                "", &ok);
-        if (ok && !username.isEmpty()) {
-            auto operation = fileManager.createOperation(itemText);
-            if (operation->shareWith(username)) {
-                QMessageBox::information(ui.window, "Shared", "File shared with " + username);
-            } else {
-                QMessageBox::warning(ui.window, "Share Failed", "Could not share file with " + username);
-            }
-        }
+        // if (ok && !username.isEmpty()) {
+        //     auto operation = fileManager.createOperation(itemText);
+        //     if (operation->shareWith(username)) {
+        //         QMessageBox::information(ui.window, "Shared", "File shared with " + username);
+        //     } else {
+        //         QMessageBox::warning(ui.window, "Share Failed", "Could not share file with " + username);
+        //     }
+        // }
     });
 
     QObject::connect(ui.revokeButton, &QPushButton::clicked, [&]() {
@@ -163,14 +158,14 @@ int main(int argc, char *argv[]) {
         QString username = QInputDialog::getText(ui.window, "Revoke Access",
                                                "Enter username to revoke access from:", QLineEdit::Normal,
                                                "", &ok);
-        if (ok && !username.isEmpty()) {
-            auto operation = fileManager.createOperation(itemText);
-            if (operation->revokeAccess(username)) {
-                QMessageBox::information(ui.window, "Revoked", "Access revoked from " + username);
-            } else {
-                QMessageBox::warning(ui.window, "Revoke Failed", "Could not revoke access from " + username);
-            }
-        }
+        // if (ok && !username.isEmpty()) {
+        //     auto operation = fileManager.createOperation(itemText);
+        //     if (operation->revokeAccess(username)) {
+        //         QMessageBox::information(ui.window, "Revoked", "Access revoked from " + username);
+        //     } else {
+        //         QMessageBox::warning(ui.window, "Revoke Failed", "Could not revoke access from " + username);
+        //     }
+        // }
     });
 
     QObject::connect(ui.deleteButton, &QPushButton::clicked, [&]() {
@@ -184,10 +179,10 @@ int main(int argc, char *argv[]) {
         if (itemText == "Owned Files:" || itemText == "Shared With You:") {
             return;
         }
-
-        fileManager.processFileWithPolicy<DefaultPolicy>(itemText);
-        delete ui.fileList->takeItem(ui.fileList->row(selectedItem));
-        QMessageBox::information(ui.window, "Deleted", "File removed.");
+        //
+        // fileManager.processFileWithPolicy<DefaultPolicy>(itemText);
+        // delete ui.fileList->takeItem(ui.fileList->row(selectedItem));
+        // QMessageBox::information(ui.window, "Deleted", "File removed.");
     });
 
     // Initially only show the login tab and remove the files tab

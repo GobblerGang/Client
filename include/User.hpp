@@ -3,9 +3,6 @@
 #include <QString>
 #include <QStringList>
 #include <QByteArray>
-#include "PACManager.hpp"
-#include "X3DH.hpp"
-
 class User {
 protected:
     // Core identity
@@ -43,7 +40,6 @@ protected:
     QByteArray ephemeralPrivateKey;
     QByteArray ephemeralPublicKey;
 
-    X3DH::PreKeyBundle preKeyBundle;
 
     friend class VaultManager;
 
@@ -62,14 +58,14 @@ public:
     const QByteArray& getEncryptionKey() const;
     const QByteArray& getPublicKey() const { return publicKey; }
 
-    // PAC operations
-    PAC createOperationPAC(const QString& operation) const;
-    bool verifyOperationPAC(const PAC& pac) const;
-
-    // X3DH operations
-    void generateX3DHKeys();
-    const X3DH::PreKeyBundle& getPreKeyBundle() const;
-    QByteArray performKeyExchange(const X3DH::PreKeyBundle& peerBundle);
+    // // PAC operations
+    // PAC createOperationPAC(const QString& operation) const;
+    // bool verifyOperationPAC(const PAC& pac) const;
+    //
+    // // X3DH operations
+    // void generateX3DHKeys();
+    // const X3DH::PreKeyBundle& getPreKeyBundle() const;
+    // QByteArray performKeyExchange(const X3DH::PreKeyBundle& peerBundle);
 
     // DB sync helpers (optional if you want to serialize/deserialize from DB)
     void setUUID(const QString& id) { uuid = id; }

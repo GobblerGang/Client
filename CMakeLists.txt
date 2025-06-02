@@ -33,19 +33,17 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(SOURCES
     main.cpp
     UI.cpp
-    model.cpp
         utils/CryptoUtils.cpp
 )
 
 # Add header files
 set(HEADERS
-    include/FileManager.hpp
-    include/User.hpp
+        include/User.hpp
         include/nlohmann/json.hpp
-    include/FileEncryption.hpp
-        utils/pac.h
-        utils/pac.cpp
+        utils/PAC.h
+        utils/PAC.cpp
         utils/CryptoUtils.h
+        utils/CryptoUtils.cpp
         utils/MasterKey.h
         utils/MasterKey.cpp
         utils/VaultManager.h
