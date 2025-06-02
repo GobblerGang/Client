@@ -1,7 +1,6 @@
 #include "MasterKey.h"
-#include "CryptoUtils.h" // Your CryptoUtils header
-
-#include <random> // for secure overwrite
+#include "CryptoUtils.h"
+#include <random>
 
 MasterKey& MasterKey::instance() {
     static MasterKey instance;

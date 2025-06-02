@@ -4,7 +4,8 @@
 #include <vector>
 #include <map>
 #include <optional>
-#include <cstdint>
+#include <User.hpp>
+#include "X25519Key.h"
 
 // Forward declarations for key types
 class Ed25519PrivateKey;
@@ -20,7 +21,7 @@ struct OPKPair {
 class VaultManager {
 public:
     // Serialize user vault from fields (e.g. user struct)
-    static std::map<std::string, std::string> get_user_vault(const /*User&*/ auto& user);
+    static std::map<std::string, std::string> get_user_vault(const /*User&*/ User& user);
 
     // Try decrypt private keys; returns pair of private keys bytes or nullopt on failure
     static std::optional<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>
@@ -53,6 +54,6 @@ public:
 
 private:
     // Base64 encode / decode helpers
-    static std::string b64_encode(const std::vector<uint8_t>& data);
-    static std::vector<uint8_t> b64_decode(const std::string& data);
+    static std::string base64_encode(const std::vector<uint8_t>& data);
+    static std::vector<uint8_t> base64_decode(const std::string& data);
 };

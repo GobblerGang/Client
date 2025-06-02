@@ -8,12 +8,8 @@
 #include <stdexcept>
 #include <sstream>
 #include <nlohmann/json.hpp>
-#include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/obj_mac.h>
-
-#include <openssl/core_names.h>
-#include <openssl/params.h>
 
 using namespace std;
 

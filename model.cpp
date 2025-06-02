@@ -87,13 +87,6 @@ bool User::verifyOperationPAC(const PAC& pac) const {
     return PACManager::verifyPAC(pac, publicKey);
 }
 
-// AdminUser implementation
-AdminUser::AdminUser(const QString& name) : User(name) {}
-
-void AdminUser::addFile(const QString& file) {
-    User::addFile(file);
-}
-
 // FileManager implementation
 FileManager::FileManager(QListWidget* list) : QObject(list), fileList(list) {
     encryptedFilesDir = QDir::currentPath() + "/encrypted_files";
