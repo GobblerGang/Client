@@ -49,29 +49,32 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(SOURCES
     main.cpp
     UI.cpp
-        utils/CryptoUtils.cpp
+        include/utils/CryptoUtils.cpp
 )
 
 # Add header files
 set(HEADERS
-        include/User.hpp
         include/nlohmann/json.hpp
         include/sqlite_orm/sqlite_orm.h
-        utils/PAC.h
-        utils/PAC.cpp
-        utils/CryptoUtils.h
-        utils/CryptoUtils.cpp
-        utils/MasterKey.h
-        utils/MasterKey.cpp
-        utils/VaultManager.h
-        utils/VaultManager.cpp
-        utils/Ed25519Key.h
-        utils/Ed25519Key.cpp
-        utils/X25519Key.h
-        utils/X25519Key.cpp
+        include/utils/dataclasses/PAC.h
+        include/utils/dataclasses/PAC.cpp
+        include/utils/CryptoUtils.h
+        include/utils/CryptoUtils.cpp
+        include/utils/MasterKey.h
+        include/utils/MasterKey.cpp
+        include/utils/VaultManager.h
+        include/utils/VaultManager.cpp
+        include/utils/Ed25519Key.h
+        include/utils/Ed25519Key.cpp
+        include/utils/X25519Key.h
+        include/utils/X25519Key.cpp
         include/database/models.h
         include/database/schema.hpp
         include/database/db_instance.h
+        src/auth.h
+        src/auth.cpp
+        include/utils/dataclasses/Vault.h
+        include/utils/dataclasses/Vault.cpp
 
 )
 

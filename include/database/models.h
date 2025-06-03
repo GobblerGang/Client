@@ -6,15 +6,33 @@ struct User {
     std::string uuid;
     std::string username;
     std::string email;
-    std::string identity_key_public;
+    
+    // Ed25519 identity key fields
+    std::string ed25519_identity_key_public;
+    std::string ed25519_identity_key_private_enc;
+    std::string ed25519_identity_key_private_nonce;
+    
+    // X25519 identity key fields
+    std::string x25519_identity_key_public;
+    std::string x25519_identity_key_private_enc;
+    std::string x25519_identity_key_private_nonce;
+    
+    // Salt for key derivation
+    std::string salt;
+    
+    // Signed prekey fields
     std::string signed_prekey_public;
     std::string signed_prekey_signature;
-    std::string salt;
-    std::string identity_key_private_enc;
-    std::string identity_key_private_nonce;
     std::string signed_prekey_private_enc;
     std::string signed_prekey_private_nonce;
+    
+    // One-time prekeys as JSON
     std::string opks_json;
+    
+    // Deprecated fields - keeping for backward compatibility
+    std::string identity_key_public;
+    std::string identity_key_private_enc;
+    std::string identity_key_private_nonce;
 };
 
 struct KEK {
