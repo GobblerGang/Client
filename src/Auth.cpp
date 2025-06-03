@@ -23,19 +23,6 @@ static std::vector<uint8_t> generateSalt(size_t len = 16) {
     return salt;
 }
 
-// Helper: Generate a dummy session token (for demo)
-static std::string generateSessionToken() {
-    static const char alphanum[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-    std::string token;
-    std::random_device rd;
-    for (int i = 0; i < 32; ++i)
-        token += alphanum[rd() % (sizeof(alphanum) - 1)];
-    return token;
-}
-
 // --- SIGNUP ---
 Auth::SignUpResult Auth::signup(const std::string& username, const std::string& email, const std::string& password) {
     if (usernameExists(username)) {
