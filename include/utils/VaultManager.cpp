@@ -197,11 +197,6 @@ std::map<std::string, std::string> VaultManager::generate_user_vault(
         
         // One-time prekeys
         {"opks", opks_json_list.dump()},
-        
-        // Populate deprecated fields for backward compatibility
-        {"identity_key_public", base64_encode(ed25519_identity_public.to_bytes())},
-        {"identity_key_private_enc", base64_encode(ed25519_ik_enc)},
-        {"identity_key_private_nonce", base64_encode(ed25519_ik_nonce)}
     };
 }
 
