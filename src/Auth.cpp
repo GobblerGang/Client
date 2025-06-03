@@ -15,10 +15,11 @@
 #include "utils/Ed25519Key.h"
 #include "utils/X25519Key.h"
 
-// Helper: Generate random salt#include <curl/curl.h>
-#include <nlohmann/json.hpp>
-#include <ctime>
-
+// Add a configurable server URL
+namespace {
+    const std::string DEFAULT_SERVER_URL = "https://gobblergang.gobbler.info";
+    std::string server_url = DEFAULT_SERVER_URL;
+}
 // Helper to get current ISO8601 time
 std::string current_iso8601_time() {
     std::time_t now = std::time(nullptr);
@@ -66,8 +67,8 @@ bool send_registration(
 
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-
-    curl_easy_setopt(curl, CURLOPT_URL, "https://gobblergang.gobbler.info/api/register");
+    std::string url = server_url + "/api/register";
+    curl_easy_setopt(curl, CURLOPT_URL, server_url.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_str.c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
@@ -84,11 +85,7 @@ static std::vector<uint8_t> generateSalt(size_t len = 16) {
     return salt;
 }
 
-// Add a configurable server URL
-namespace {
-    const std::string DEFAULT_SERVER_URL = "https://gobblergang.gobbler.info";
-    std::string server_url = DEFAULT_SERVER_URL;
-}
+
 
 
 // --- SIGNUP ---
