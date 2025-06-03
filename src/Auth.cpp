@@ -23,6 +23,13 @@ static std::vector<uint8_t> generateSalt(size_t len = 16) {
     return salt;
 }
 
+// Add a configurable server URL
+namespace {
+    const std::string DEFAULT_SERVER_URL = "https://gobblergang.gobbler.info";
+    std::string server_url = DEFAULT_SERVER_URL;
+}
+
+
 // --- SIGNUP ---
 Auth::SignUpResult Auth::signup(const std::string& username, const std::string& email, const std::string& password) {
     if (usernameExists(username)) {
@@ -184,14 +191,13 @@ bool Auth::emailExists(const std::string& email) {
     return !users.empty();
 }
 
-
-
 std::optional<std::string> Auth::requestUUIDFromServer() {
     CURL* curl = curl_easy_init();
     if (!curl) return std::nullopt;
 
     std::string response;
-    curl_easy_setopt(curl, CURLOPT_URL, "https://gobblergang.gobbler.info/api/generate-uuid");
+    std::string url = server_url + "/api/generate-uuid";
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
         auto* str = static_cast<std::string*>(userdata);
