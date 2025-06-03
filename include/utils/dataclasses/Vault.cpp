@@ -1,4 +1,4 @@
-#include "vault.h"
+#include "utils/dataclasses/Vault.h"
 
 Vault::Vault(
     std::string salt,

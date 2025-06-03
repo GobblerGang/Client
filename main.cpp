@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "UI.cpp"
 #include "database/db_instance.h"
+#include "src/Auth.h"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -118,13 +119,11 @@ int main(int argc, char *argv[]) {
                 ui.signupStatusLabel->setText("Username already exists. Please choose another.");
                 return;
             }
-
-            User newUser;
-            newUser.username = username.toStdString();
-            newUser.salt = password.toStdString(); // Replace with hashed password
-            newUser.email = email.toStdString();
-
-            db().insert(newUser);
+            Auth::SignUpResult result = Auth::signup(username.toStdString(), email.toStdString(), password.toStdString());
+            if (!result.success) {
+                ui.signupStatusLabel->setText(QString::fromStdString(result.message));
+                return;
+            }
 
             ui.signupStatusLabel->setText("Signup successful! You can now log in.");
             ui.signupUsernameEdit->clear();

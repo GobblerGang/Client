@@ -24,7 +24,7 @@ public:
     static std::pair<std::pair<Ed25519PrivateKey*, Ed25519PublicKey*>,std::pair<X25519PrivateKey*, X25519PublicKey*>>
     generate_identity_keypair();
     // returns Ed25519 + X25519 keypairs
-    static std::vector<uint8_t> CryptoUtils::generate_kek();
+    static std::vector<uint8_t> generate_kek();
     static std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>>
     generate_signed_prekey(EVP_PKEY *identity_key); // X25519 + signature
 
