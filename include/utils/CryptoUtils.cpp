@@ -5,6 +5,7 @@
 #include <openssl/kdf.h>
 #include <stdexcept>
 #include <sstream>
+#include <tuple>
 #include <nlohmann/json.hpp>
 #include <openssl/x509.h>
 #include <openssl/obj_mac.h>
@@ -78,17 +79,65 @@ std::vector<uint8_t> CryptoUtils::decrypt_with_key(const std::vector<uint8_t>& n
     return plaintext;
 }
 
-pair<Ed25519PrivateKey*, Ed25519PublicKey*> CryptoUtils::generate_identity_keypair() {
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, nullptr);
-    EVP_PKEY* priv = nullptr;
-    EVP_PKEY_keygen_init(ctx);
-    EVP_PKEY_keygen(ctx, &priv);
-    EVP_PKEY_CTX_free(ctx);
-    EVP_PKEY* pub = EVP_PKEY_dup(priv);
-    return {priv, pub};
+std::pair<
+    std::pair<Ed25519PrivateKey*, Ed25519PublicKey*>,
+    std::pair<X25519PrivateKey*, X25519PublicKey*>
+> CryptoUtils::generate_identity_keypair() {
+    // === Generate Ed25519 Key ===
+    EVP_PKEY_CTX* ed_ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, nullptr);
+    EVP_PKEY* ed_pkey = nullptr;
+    EVP_PKEY_keygen_init(ed_ctx);
+    EVP_PKEY_keygen(ed_ctx, &ed_pkey);
+    EVP_PKEY_CTX_free(ed_ctx);
+
+    // Extract raw keys
+    std::vector<uint8_t> ed_priv_bytes(32);
+    size_t priv_len = ed_priv_bytes.size();
+    if (!EVP_PKEY_get_raw_private_key(ed_pkey, ed_priv_bytes.data(), &priv_len))
+        throw std::runtime_error("Failed to get raw Ed25519 private key");
+
+    std::vector<uint8_t> ed_pub_bytes(32);
+    size_t pub_len = ed_pub_bytes.size();
+    if (!EVP_PKEY_get_raw_public_key(ed_pkey, ed_pub_bytes.data(), &pub_len))
+        throw std::runtime_error("Failed to get raw Ed25519 public key");
+
+    auto* ed_priv = new Ed25519PrivateKey(ed_priv_bytes);
+    auto* ed_pub = new Ed25519PublicKey(ed_pub_bytes);
+
+    // === Generate X25519 Key ===
+    EVP_PKEY_CTX* x_ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, nullptr);
+    EVP_PKEY* x_pkey = nullptr;
+    EVP_PKEY_keygen_init(x_ctx);
+    EVP_PKEY_keygen(x_ctx, &x_pkey);
+    EVP_PKEY_CTX_free(x_ctx);
+
+    // Extract raw X25519 keys
+    std::vector<uint8_t> x_priv_bytes(32);
+    priv_len = x_priv_bytes.size();
+    if (!EVP_PKEY_get_raw_private_key(x_pkey, x_priv_bytes.data(), &priv_len))
+        throw std::runtime_error("Failed to get raw X25519 private key");
+
+    std::vector<uint8_t> x_pub_bytes(32);
+    pub_len = x_pub_bytes.size();
+    if (!EVP_PKEY_get_raw_public_key(x_pkey, x_pub_bytes.data(), &pub_len))
+        throw std::runtime_error("Failed to get raw X25519 public key");
+
+    auto* x_priv = new X25519PrivateKey(x_priv_bytes);
+    auto* x_pub = new X25519PublicKey(x_pub_bytes);
+
+    // Cleanup
+    EVP_PKEY_free(ed_pkey);
+    EVP_PKEY_free(x_pkey);
+
+    return {
+        {ed_priv, ed_pub},
+        {x_priv, x_pub}
+    };
 }
 
-tuple<X25519PrivateKey*, X25519PublicKey*, std::vector<uint8_t>> CryptoUtils::generate_signed_prekey(EVP_PKEY* identity_key) {
+
+std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>> CryptoUtils::generate_signed_prekey(
+    EVP_PKEY *identity_key) {
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, nullptr);
     EVP_PKEY* priv = nullptr;
     EVP_PKEY_keygen_init(ctx);
@@ -112,7 +161,22 @@ tuple<X25519PrivateKey*, X25519PublicKey*, std::vector<uint8_t>> CryptoUtils::ge
 
     EVP_PKEY_CTX_free(sign_ctx);
 
-    return {priv, pub, signature};
+
+    // Extract raw X25519 keys
+    std::vector<uint8_t> x_priv_bytes(32);
+    size_t priv_len = x_priv_bytes.size();
+    if (!EVP_PKEY_get_raw_private_key(priv, x_priv_bytes.data(), &priv_len))
+        throw std::runtime_error("Failed to get raw X25519 private key");
+
+    std::vector<uint8_t> x_pub_bytes(32);
+    size_t pub_len = x_pub_bytes.size();
+    if (!EVP_PKEY_get_raw_public_key(pub, x_pub_bytes.data(), &pub_len))
+        throw std::runtime_error("Failed to get raw X25519 public key");
+
+    auto* x_priv = new X25519PrivateKey(x_priv_bytes);
+    auto* x_pub = new X25519PublicKey(x_pub_bytes);
+    std::tuple signedkey= std::make_tuple(x_priv, x_pub, signature);
+    return signedkey;
 }
 
 std::vector<uint8_t> CryptoUtils::perform_3xdh_sender(EVP_PKEY* id_priv, EVP_PKEY* eph_priv, EVP_PKEY* r_id_pub, EVP_PKEY* r_spk_pub, EVP_PKEY* r_otk_pub) {
@@ -178,6 +242,12 @@ std::vector<uint8_t> CryptoUtils::perform_3xdh_recipient(
     return key;
 }
 
+#include <openssl/evp.h>
+#include <iomanip>
+#include <sstream>
+#include <ctime>
+#include <stdexcept>
+
 PAC CryptoUtils::create_pac(
     const std::string &file_id,
     const std::string &recipient_id,
@@ -190,7 +260,7 @@ PAC CryptoUtils::create_pac(
     const std::optional<std::string> &filename,
     const std::optional<std::string> &mime_type
 ) {
-    // 1. Create the PAC JSON structure with ordered keys
+    // Build ordered JSON for PAC payload
     nlohmann::ordered_json pac_json = {
         {"file_id", file_id},
         {"recipient_id", recipient_id},
@@ -200,16 +270,15 @@ PAC CryptoUtils::create_pac(
         {"sender_ephemeral_pubkey", VaultManager::base64_encode(sender_ephemeral_pubkey)},
         {"valid_until", valid_until},
         {"revoked", false},
-        {"filename", filename.value()},
-        {"mime_type", mime_type.value()}
+        {"filename", filename.value_or("")},
+        {"mime_type", mime_type.value_or("")}
     };
 
+    // Serialize JSON to string to sign
     std::string message = pac_json.dump();
 
-    std::vector<uint8_t> signature(EVP_PKEY_size(identity_key));
-    size_t siglen = signature.size();
-
-    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+    // Sign message with Ed25519 using OpenSSL EVP interface
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
     if (!ctx) {
         throw std::runtime_error("Failed to create EVP_MD_CTX");
     }
@@ -219,35 +288,50 @@ PAC CryptoUtils::create_pac(
         throw std::runtime_error("Failed to initialize Ed25519 signing");
     }
 
+    size_t siglen = 0;
+    // First call to get signature length
+    if (EVP_DigestSign(ctx, nullptr, &siglen,
+                       reinterpret_cast<const uint8_t*>(message.data()), message.size()) != 1) {
+        EVP_MD_CTX_free(ctx);
+        throw std::runtime_error("Failed to get signature length");
+    }
+
+    std::vector<uint8_t> signature(siglen);
+
+    // Second call to get actual signature
     if (EVP_DigestSign(ctx, signature.data(), &siglen,
-                     reinterpret_cast<const uint8_t*>(message.data()),
-                     message.size()) != 1) {
+                       reinterpret_cast<const uint8_t*>(message.data()), message.size()) != 1) {
         EVP_MD_CTX_free(ctx);
         throw std::runtime_error("Failed to create Ed25519 signature");
     }
     EVP_MD_CTX_free(ctx);
+
+    // Resize in case signature size differs
     signature.resize(siglen);
 
-    std::optional<std::string> valid_until_iso;
+    // Convert valid_until to ISO8601 string or empty string if 0
+    std::string valid_until_iso;
     if (valid_until != 0) {
-        auto time = static_cast<std::time_t>(valid_until);
+        std::time_t time = static_cast<std::time_t>(valid_until);
         std::tm tm = *std::gmtime(&time);
         std::ostringstream oss;
         oss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
         valid_until_iso = oss.str();
     }
+
     return PAC{
-        .recipient_id = recipient_id,
-        .file_uuid = file_id,
-        .valid_until = valid_until_iso,
-        .encrypted_file_key = pac_json.at("encrypted_file_key").get<std::string>(),
-        .signature = VaultManager::base64_encode(signature),
-        .issuer_id = issuer_id,
-        .sender_ephemeral_public = pac_json.at("sender_ephemeral_pubkey").get<std::string>(),
-        .k_file_nonce = pac_json.at("encrypted_file_key_nonce").get<std::string>(),
-        .filename = filename,
-        .mime_type = mime_type
+        recipient_id,
+        file_id,
+        valid_until_iso,
+        pac_json.at("encrypted_file_key").get<std::string>(),
+        VaultManager::base64_encode(signature),
+        issuer_id,
+        pac_json.at("sender_ephemeral_pubkey").get<std::string>(),
+        pac_json.at("encrypted_file_key_nonce").get<std::string>(),
+        filename.value_or(""),
+        mime_type.value_or("")
     };
+
 }
 
 bool CryptoUtils::verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key) {
@@ -268,77 +352,3 @@ bool CryptoUtils::verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_pu
         return false;
     }
 }
-#pragma once
-
-#include <string>
-#include <vector>
-#include <map>
-#include <optional>
-#include "Ed25519Key.h"
-#include "X25519Key.h"
-#include "User.hpp"
-#include "vault.h"
-
-// Forward declaration to avoid circular dependency
-class CryptoUtils;
-
-struct OPKPair {
-    X25519PrivateKey private_key;
-    X25519PublicKey public_key;
-};
-
-class VaultManager {
-    // Declare CryptoUtils as a friend class
-    friend class CryptoUtils;
-
-public:
-    // Get vault from user database entry
-    static Vault get_user_vault(const User& user);
-    
-    // Create user database entry from vault
-    static User create_user_from_vault(const std::string& username, const std::string& email, 
-                                       const std::string& uuid, const Vault& vault);
-    
-    // Try to decrypt private keys from vault using master key
-    static std::optional<std::tuple<std::vector<uint8_t>, std::vector<uint8_t>, std::vector<uint8_t>>>
-    try_decrypt_private_keys(const Vault& vault, const std::vector<uint8_t>& master_key);
-    
-    // Verify that decrypted keys match their public counterparts
-    static bool verify_decrypted_keys(
-        const std::vector<uint8_t>& ed25519_identity_private_bytes,
-        const std::vector<uint8_t>& x25519_identity_private_bytes,
-        const std::vector<uint8_t>& spk_private_bytes,
-        const Vault& vault);
-    
-    // Generate a new vault with all necessary keys
-    static Vault generate_user_vault(
-        const Ed25519PrivateKey& ed25519_identity_private,
-        const Ed25519PublicKey& ed25519_identity_public,
-        const X25519PrivateKey& x25519_identity_private,
-        const X25519PublicKey& x25519_identity_public,
-        const X25519PrivateKey& spk_private,
-        const X25519PublicKey& spk_public,
-        const std::vector<uint8_t>& spk_signature,
-        const std::vector<uint8_t>& salt,
-        const std::vector<uint8_t>& master_key,
-        const std::vector<OPKPair>& opks = {});
-    
-    // Decrypt all one-time prekeys
-    static std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>
-    decrypt_all_opks(const Vault& vault, const std::vector<uint8_t>& master_key);
-    
-    // Convert decrypted bytes to key pairs
-    static std::vector<OPKPair> keypairs_from_opk_bytes(
-        const std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>& decrypted_opks);
-
-    // Make these public so they can be accessed directly
-    static std::string base64_encode(const std::vector<uint8_t>& data);
-    static std::vector<uint8_t> base64_decode(const std::string& input);
-
-private:
-    // Private methods if any
-    static const std::vector<uint8_t> ed25519_identity_associated_data;
-    static const std::vector<uint8_t> x25519_identity_associated_data;
-    static const std::vector<uint8_t> spk_associated_data;
-    static const std::vector<uint8_t> opk_associated_data;
-};

@@ -22,11 +22,6 @@ inline auto initStorage(const std::string& path = "database.sqlite") {
             make_column("x25519_identity_key_private_enc", &User::x25519_identity_key_private_enc),
             make_column("x25519_identity_key_private_nonce", &User::x25519_identity_key_private_nonce),
             
-            // Deprecated identity key fields (keeping for backward compatibility)
-            make_column("identity_key_public", &User::identity_key_public),
-            make_column("identity_key_private_enc", &User::identity_key_private_enc),
-            make_column("identity_key_private_nonce", &User::identity_key_private_nonce),
-            
             // Salt and signed prekey fields
             make_column("salt", &User::salt),
             make_column("signed_prekey_public", &User::signed_prekey_public),

@@ -28,11 +28,6 @@ struct User {
     
     // One-time prekeys as JSON
     std::string opks_json;
-    
-    // Deprecated fields - keeping for backward compatibility
-    std::string identity_key_public;
-    std::string identity_key_private_enc;
-    std::string identity_key_private_nonce;
 };
 
 struct KEK {

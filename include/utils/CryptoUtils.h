@@ -22,9 +22,11 @@ public:
     static std::vector<uint8_t>
     decrypt_with_key(const std::vector<uint8_t>& nonce, const std::vector<uint8_t>& ciphertext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
 
-    static std::pair<Ed25519PrivateKey*, Ed25519PublicKey*> generate_identity_keypair(); // Ed25519
-
-    static std::tuple<X25519PrivateKey*, X25519PublicKey*, std::vector<uint8_t>> generate_signed_prekey(EVP_PKEY* identity_key); // X25519 + signature
+    std::pair<std::pair<Ed25519PrivateKey*, Ed25519PublicKey*>,std::pair<X25519PrivateKey*, X25519PublicKey*>>
+    generate_identity_keypair();
+    // returns Ed25519 + X25519 keypairs
+    static std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>>
+    generate_signed_prekey(EVP_PKEY *identity_key); // X25519 + signature
 
     static std::vector<uint8_t> perform_3xdh_sender(
         EVP_PKEY* identity_private,
@@ -42,7 +44,7 @@ public:
         EVP_PKEY* one_time_prekey_private = nullptr
     );
 
-    static PAC CryptoUtils::create_pac(
+    static PAC create_pac(
     const std::string &file_id,
     const std::string &recipient_id,
     const std::string &issuer_id,
@@ -55,5 +57,5 @@ public:
     const std::optional<std::string> &mime_type
     );
 
-    static bool CryptoUtils::verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key); // Ed25519
+    static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key); // Ed25519
 };

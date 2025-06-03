@@ -81,11 +81,6 @@ std::map<std::string, std::string> VaultManager::get_user_vault(const User& user
             
             // One-time prekeys
             {"opks", user.opks_json.empty() ? "[]" : user.opks_json},
-            
-            // Deprecated fields (for backward compatibility)
-            {"identity_key_public", user.identity_key_public},
-            {"identity_key_private_enc", user.identity_key_private_enc},
-            {"identity_key_private_nonce", user.identity_key_private_nonce}
     };
 }
 

@@ -4,7 +4,6 @@
 #include <QInputDialog>
 #include <unordered_map>
 #include "UI.cpp"
-#include "User.hpp"
 #include "database/db_instance.h"
 
 int main(int argc, char *argv[]) {
