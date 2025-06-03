@@ -41,4 +41,3 @@ std::vector<uint8_t> Ed25519PublicKey::to_bytes() const {
     }
     return buf;
 }
-

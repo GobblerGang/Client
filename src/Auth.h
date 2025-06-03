@@ -3,8 +3,6 @@
 #include <string>
 #include <optional>
 #include <tuple>
-#include "User.hpp"
-
 class Auth {
 public:
     struct SignUpResult {
