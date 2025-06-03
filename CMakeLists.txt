@@ -87,6 +87,7 @@ target_link_libraries(CPlusPlusClient
     OpenSSL::Crypto
         ${ARGON2_LIB}
         ${SQLite3_LIBRARIES}
+        curl
 )
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX "")

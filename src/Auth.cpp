@@ -1,9 +1,15 @@
 #include "Auth.h"
+
+#include <iostream>
+
 #include "database/db_instance.h"
 #include <random>
 #include <optional>
+#include <qtextstream.h>
 #include <string>
 #include <vector>
+#include <curl/curl.h>
+#include <nlohmann/json.hpp>
 #include "utils/CryptoUtils.h"
 #include "utils/VaultManager.h"
 #include "utils/Ed25519Key.h"
@@ -58,6 +64,9 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     X25519PrivateKey* spk_priv = std::get<0>(spk_tuple);
     X25519PublicKey* spk_pub = std::get<1>(spk_tuple);
     std::vector<uint8_t> spk_sig = std::get<2>(spk_tuple);
+    std::cout << "priv" << spk_priv << std::endl;
+    std::cout << "pub" << spk_pub << std::endl;
+    std::cout << "signature" << spk_sig.size() << std::endl;
 
     // Generate OPKs (one-time prekeys)
     std::vector<OPKPair> opks; // You should implement CryptoUtils::generate_opks() if needed
@@ -188,7 +197,39 @@ bool Auth::emailExists(const std::string& email) {
     return !users.empty();
 }
 
+
+
 std::optional<std::string> Auth::requestUUIDFromServer() {
-    // Simulate successful server request
-    return "generated-uuid-1234";
+    CURL* curl = curl_easy_init();
+    if (!curl) return std::nullopt;
+
+    std::string response;
+    curl_easy_setopt(curl, CURLOPT_URL, "https://gobblergang.gobbler.info/api/generate-uuid");
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
+        auto* str = static_cast<std::string*>(userdata);
+        str->append(ptr, size * nmemb);
+        return size * nmemb;
+    });
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    if (res != CURLE_OK) return std::nullopt;
+
+    try {
+        // If the response is JSON: { "uuid": "..." }
+        auto json = nlohmann::json::parse(response);
+        if (json.contains("uuid")) {
+            return json["uuid"].get<std::string>();
+        }
+        // If the response is just the UUID as plain text
+        return response;
+    } catch (...) {
+        // If not JSON, just return the raw response trimmed
+        response.erase(response.find_last_not_of(" \n\r\t") + 1);
+        if (!response.empty()) return response;
+        return std::nullopt;
+    }
 }
