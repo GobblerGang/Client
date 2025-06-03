@@ -15,7 +15,68 @@
 #include "utils/Ed25519Key.h"
 #include "utils/X25519Key.h"
 
-// Helper: Generate random salt
+// Helper: Generate random salt#include <curl/curl.h>
+#include <nlohmann/json.hpp>
+#include <ctime>
+
+// Helper to get current ISO8601 time
+std::string current_iso8601_time() {
+    std::time_t now = std::time(nullptr);
+    std::tm tm = *std::gmtime(&now);
+    char buf[32];
+    std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &tm);
+    return buf;
+}
+
+bool send_registration(
+    const std::string& uuid,
+    const std::string& username,
+    const std::string& email,
+    const std::vector<uint8_t>& salt,
+    const std::string& identity_key_public,
+    const std::string& signed_prekey_public,
+    const std::string& signed_prekey_signature,
+    const nlohmann::json& opks,
+    const std::string& enc_kek_ciphertext,
+    const std::string& kek_nonce
+) {
+    nlohmann::json payload = {
+        {"user", {
+            {"uuid", uuid},
+            {"username", username},
+            {"email", email},
+            {"salt", VaultManager::base64_encode(salt)}
+        }},
+        {"keys", {
+            {"identity_key_public", identity_key_public},
+            {"signed_prekey_public", signed_prekey_public},
+            {"signed_prekey_signature", signed_prekey_signature},
+            {"opks", opks}
+        }},
+        {"kek", {
+            {"enc_kek_cyphertext", enc_kek_ciphertext},
+            {"nonce", kek_nonce},
+            {"updated_at", current_iso8601_time()}
+        }}
+    };
+
+    std::string json_str = payload.dump();
+    CURL* curl = curl_easy_init();
+    if (!curl) return false;
+
+    struct curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+
+    curl_easy_setopt(curl, CURLOPT_URL, "https://gobblergang.gobbler.info/api/register");
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_str.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+    CURLcode res = curl_easy_perform(curl);
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+
+    return res == CURLE_OK;
+}
 static std::vector<uint8_t> generateSalt(size_t len = 16) {
     std::vector<uint8_t> salt(len);
     std::random_device rd;
