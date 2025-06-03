@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <optional>
-#include <openssl/err.h>
 #include <nlohmann/json.hpp>
 #include "dataclasses/PAC.h"
 #include "Ed25519Key.h"
@@ -22,9 +21,10 @@ public:
     static std::vector<uint8_t>
     decrypt_with_key(const std::vector<uint8_t>& nonce, const std::vector<uint8_t>& ciphertext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
 
-    std::pair<std::pair<Ed25519PrivateKey*, Ed25519PublicKey*>,std::pair<X25519PrivateKey*, X25519PublicKey*>>
+    static std::pair<std::pair<Ed25519PrivateKey*, Ed25519PublicKey*>,std::pair<X25519PrivateKey*, X25519PublicKey*>>
     generate_identity_keypair();
     // returns Ed25519 + X25519 keypairs
+    static std::vector<uint8_t> CryptoUtils::generate_kek();
     static std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>>
     generate_signed_prekey(EVP_PKEY *identity_key); // X25519 + signature
 

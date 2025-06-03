@@ -135,6 +135,13 @@ std::pair<
     };
 }
 
+std::vector<uint8_t> CryptoUtils::generate_kek() {
+    std::vector<uint8_t> kek(32);
+    if (RAND_bytes(kek.data(), kek.size()) != 1) {
+        throw std::runtime_error("Failed to generate KEK");
+    }
+    return kek;
+}
 
 std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>> CryptoUtils::generate_signed_prekey(
     EVP_PKEY *identity_key) {
