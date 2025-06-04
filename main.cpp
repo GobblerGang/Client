@@ -2,7 +2,6 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QInputDialog>
-#include <unordered_map>
 #include "UI.cpp"
 #include "database/db_instance.h"
 #include "src/Auth.h"
@@ -75,8 +74,8 @@ int main(int argc, char *argv[]) {
         }
 
         try {
-            auto users = db().get_all<User>(
-                where(c(&User::username) == username.toStdString())
+            auto users = db().get_all<UserModel>(
+                where(c(&UserModel::username) == username.toStdString())
             );
 
             if (users.empty()) {
@@ -84,7 +83,7 @@ int main(int argc, char *argv[]) {
                 return;
             }
 
-            const User& user = users.front();
+            const UserModel& user = users.front();
 
             // Replace this with secure password check
             if (user.salt == password.toStdString()) {
@@ -111,8 +110,8 @@ int main(int argc, char *argv[]) {
         }
 
         try {
-            auto existing = db().get_all<User>(
-                where(c(&User::username) == username.toStdString())
+            auto existing = db().get_all<UserModel>(
+                where(c(&UserModel::username) == username.toStdString())
             );
 
             if (!existing.empty()) {
