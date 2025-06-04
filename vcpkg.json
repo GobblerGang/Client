@@ -4,7 +4,6 @@
     "curl",
     "sqlite3",
     "openssl",
-    "qtbase",
     "nlohmann-json"
   ]
 }
