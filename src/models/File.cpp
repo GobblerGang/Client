@@ -3,6 +3,7 @@
 #include "utils/MasterKey.h"
 #include <stdexcept>
 
+#
 File::File(const FileData& data) : data_(data) {}
 
 void File::encrypt(const std::vector<uint8_t>& file_content, const std::string& mime_type) {

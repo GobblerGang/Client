@@ -108,6 +108,7 @@ set(HEADERS
         src/models/UserModelORM.h
         src/Server.h
         include/utils/Config.cpp
+        src/models/File.cpp
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
