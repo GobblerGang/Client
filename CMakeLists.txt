@@ -72,11 +72,6 @@ set(SOURCES
         UI.cpp
         src/auth.cpp
         src/DataManager.cpp
-        src/models/file.cpp
-        src/models/pac.cpp
-        src/models/user.cpp
-        src/models/kek.cpp
-        src/models/keys.cpp
         include/utils/CryptoUtils.cpp
         include/utils/MasterKey.cpp
         include/utils/VaultManager.cpp
@@ -101,11 +96,6 @@ set(HEADERS
         src/auth.h
         include/utils/dataclasses/Vault.h
         src/DataManager.h
-        src/models/file.h
-        src/models/pac.h
-        src/models/user.h
-        src/models/kek.h
-        src/models/keys.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
