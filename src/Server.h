@@ -9,6 +9,13 @@
 class Ed25519PrivateKey;
 class PAC;
 
+struct HttpResponse {
+    long status_code;
+    std::string body;
+    bool success;
+    CURLcode curl_code;
+};
+
 // Singleton Server class to handle all server interactions
 class Server {
 public:
@@ -21,18 +28,22 @@ public:
     Server& operator=(Server&&) = delete;
 
     nlohmann::json create_user(const nlohmann::json& user_data) const;
+    /**
+     * @brief Generates a new UUID for the user. GETs url/api/generate-uuid
+     * @return A string containing the new UUID.
+     * @throws std::runtime_error if the server request fails or returns an error.
+     */
+    std::string get_new_user_uuid();
 
-    std::pair<std::string, std::string> get_new_user_uuid() const;
-
-    std::pair<nlohmann::json, std::string> get_kek_info(const std::string& user_uuid) const;
+    std::pair<nlohmann::json, std::string> get_kek_info(const std::string& user_uuid);
 
     std::pair<nlohmann::json, std::string> update_kek_info(const std::string& encrypted_kek,
                                                            const std::string& kek_nonce,
                                                            const std::string& updated_at,
                                                            const std::string& user_uuid,
-                                                           const Ed25519PrivateKey& ik_priv) const;
+                                                           const Ed25519PrivateKey& ik_priv);
 
-    std::pair<nlohmann::json, std::string> get_user_by_name(const std::string& username) const;
+    std::pair<nlohmann::json, std::string> get_user_by_name(const std::string& username);
 
     std::pair<nlohmann::json, std::string> upload_file(const std::vector<uint8_t>& file_ciphertext,
                                                        const std::string& file_name,
@@ -41,29 +52,29 @@ public:
                                                        const std::vector<uint8_t>& file_nonce,
                                                        const std::vector<uint8_t>& enc_file_k,
                                                        const std::vector<uint8_t>& k_file_nonce,
-                                                       const Ed25519PrivateKey& private_key) const;
+                                                       const Ed25519PrivateKey& private_key);
 
     std::pair<nlohmann::json, std::string> get_user_keys(const std::string& sender_user_uuid,
                                                          const std::string& recipient_uuid,
-                                                         const Ed25519PrivateKey& private_key) const;
+                                                         const Ed25519PrivateKey& private_key);
 
     std::pair<nlohmann::json, std::string> send_pac(const PAC& pac,
                                                     const std::string& sender_uuid,
-                                                    const Ed25519PrivateKey& private_key) const;
+                                                    const Ed25519PrivateKey& private_key);
 
     std::pair<nlohmann::json, std::string> download_file(const std::string& file_uuid,
                                                          const Ed25519PrivateKey& private_key,
-                                                         const std::string& user_uuid) const;
+                                                         const std::string& user_uuid);
 
     std::pair<nlohmann::json, std::string> get_owned_files(const std::string& user_id,
-                                                           const Ed25519PrivateKey& private_key) const;
+                                                           const Ed25519PrivateKey& private_key);
 
     nlohmann::json get_user_pacs(const std::string& user_id,
-                                 const Ed25519PrivateKey& private_key) const;
+                                 const Ed25519PrivateKey& private_key);
 
     std::pair<nlohmann::json, std::string> get_file_info(const std::string& file_uuid,
                                                          const std::string& user_uuid,
-                                                         const Ed25519PrivateKey& private_key) const;
+                                                         const Ed25519PrivateKey& private_key);
 
     bool get_index();
     // Get the server URL
@@ -83,13 +94,13 @@ private:
     void cleanup_curl();
 
     // Helper function to perform a POST request
-    std::pair<nlohmann::json, std::string> post_request(const std::string& url, const nlohmann::json& payload);
+    HttpResponse post_request(const std::string& url, const nlohmann::json& payload);
 
     // Helper function to perform a GET request
-    std::pair<nlohmann::json, std::string> get_request(const std::string& url);
+    HttpResponse get_request(const std::string& url, const std::vector<std::string>& headers = {});
 
-    // Helper function to parse server response
-    std::optional<nlohmann::json> parse_server_response(const nlohmann::json response_body, int status_code);
+    // // Helper function to parse server response
+    // std::optional<nlohmann::json> parse_server_response(const nlohmann::json response_body, int status_code);
 
     // Functions for setting/signing headers
 
