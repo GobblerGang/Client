@@ -3,6 +3,7 @@
 
 #include <string>
 
+
 struct FileData {
     std::string file_name;
     std::string enc_file_ciphertext;  // base64 encoded
