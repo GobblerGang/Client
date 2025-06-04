@@ -80,6 +80,7 @@ set(SOURCES
         include/utils/dataclasses/Vault.cpp
         src/UserManager.cpp
         src/UserManager.h
+        src/Server.cpp
 )
 
 set(HEADERS
@@ -108,6 +109,7 @@ set(HEADERS
         src/models/UserModelORM.h
         src/Server.h
         include/utils/Config.cpp
+        src/Server.cpp
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
