@@ -5,6 +5,7 @@
 #include "UI.cpp"
 #include "database/db_instance.h"
 #include "src/Auth.h"
+#include "src/models/UserModel.h"
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -74,8 +75,8 @@ int main(int argc, char *argv[]) {
         }
 
         try {
-            auto users = db().get_all<UserModel>(
-                where(c(&UserModel::username) == username.toStdString())
+            auto users = db().get_all<UserModelORM>(
+                where(c(&UserModelORM::username) == username.toStdString())
             );
 
             if (users.empty()) {
@@ -83,7 +84,7 @@ int main(int argc, char *argv[]) {
                 return;
             }
 
-            const UserModel& user = users.front();
+            const UserModelORM& user = users.front();
 
             // Replace this with secure password check
             if (user.salt == password.toStdString()) {
@@ -110,8 +111,8 @@ int main(int argc, char *argv[]) {
         }
 
         try {
-            auto existing = db().get_all<UserModel>(
-                where(c(&UserModel::username) == username.toStdString())
+            auto existing = db().get_all<UserModelORM>(
+                where(c(&UserModelORM::username) == username.toStdString())
             );
 
             if (!existing.empty()) {

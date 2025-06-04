@@ -6,7 +6,7 @@
 #include <optional>
 #include "Ed25519Key.h"
 #include "X25519Key.h"
-#include "database/models.h"
+#include "models/UserModel.h"
 
 // Forward declaration to avoid circular dependency
 class CryptoUtils;

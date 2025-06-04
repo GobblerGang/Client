@@ -159,7 +159,7 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     }
 
     // Prepare User struct
-    UserModel user;
+    UserModelORM user;
     user.uuid = uuid;
     user.username = username;
     user.email = email;
@@ -178,8 +178,8 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
 
     // Prepare UserKEK struct (assumes you have a UserKEK struct/table)
     KEKModel userKek;
-    userKek.enc_kek = kek_ciphertext_b64;
-    userKek.kek_nonce = kek_nonce_b64;
+    userKek.enc_kek_cyphertext = kek_ciphertext_b64;
+    userKek.nonce = kek_nonce_b64;
 
     // Insert user and KEK into DB
     try {
@@ -209,12 +209,12 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
 
 // --- HELPERS ---
 bool Auth::usernameExists(const std::string& username) {
-    auto users = db().get_all<UserModel>(where(c(&UserModel::username) == username));
+    auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username));
     return !users.empty();
 }
 
 bool Auth::emailExists(const std::string& email) {
-    auto users = db().get_all<UserModel>(where(c(&UserModel::email) == email));
+    auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::email) == email));
     return !users.empty();
 }
 
