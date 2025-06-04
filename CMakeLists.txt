@@ -89,11 +89,16 @@ set(HEADERS
         include/utils/VaultManager.h
         include/utils/Ed25519Key.h
         include/utils/X25519Key.h
-        include/database/models.h
         include/database/schema.hpp
         include/database/db_instance.h
         src/auth.h
         include/utils/dataclasses/Vault.h
+        include/database/models.h
+        src/models/file.h
+        src/models/pac.h
+        src/models/user.h
+        src/models/kek.h
+        src/models/keys.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})

@@ -159,7 +159,7 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     }
 
     // Prepare User struct
-    User user;
+    UserModel user;
     user.uuid = uuid;
     user.username = username;
     user.email = email;
@@ -177,7 +177,7 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     user.opks_json = vault_map["opks"];
 
     // Prepare UserKEK struct (assumes you have a UserKEK struct/table)
-    KEK userKek;
+    KEKModel userKek;
     userKek.enc_kek = kek_ciphertext_b64;
     userKek.kek_nonce = kek_nonce_b64;
 
@@ -209,12 +209,12 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
 
 // --- HELPERS ---
 bool Auth::usernameExists(const std::string& username) {
-    auto users = db().get_all<User>(where(c(&User::username) == username));
+    auto users = db().get_all<UserModel>(where(c(&UserModel::username) == username));
     return !users.empty();
 }
 
 bool Auth::emailExists(const std::string& email) {
-    auto users = db().get_all<User>(where(c(&User::email) == email));
+    auto users = db().get_all<UserModel>(where(c(&UserModel::email) == email));
     return !users.empty();
 }
 
