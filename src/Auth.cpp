@@ -14,7 +14,7 @@
 #include "utils/VaultManager.h"
 #include "utils/Ed25519Key.h"
 #include "utils/X25519Key.h"
-#include "utils/Config.cpp"
+#include "utils/Config.h"
 
 // Add a configurable server URL
 namespace {

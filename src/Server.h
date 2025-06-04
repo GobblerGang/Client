@@ -4,7 +4,8 @@
 #include <optional>
 #include <nlohmann/json.hpp>
 #include <curl/curl.h>
-#include "utils/Config.cpp"
+#include "utils/Config.h"
+
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
