@@ -95,7 +95,6 @@ set(HEADERS
         include/database/db_instance.h
         src/auth.h
         include/utils/dataclasses/Vault.h
-        include/database/models.h
         src/models/file.h
         src/models/pac.h
         src/models/RemoteUser.h
