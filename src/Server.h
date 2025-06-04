@@ -45,13 +45,13 @@ public:
 
     std::pair<nlohmann::json, std::string> get_user_by_name(const std::string& username);
 
-    std::pair<nlohmann::json, std::string> upload_file(const std::vector<uint8_t>& file_ciphertext,
+    std::pair<nlohmann::json, std::string> upload_file(const std::string& file_ciphertext,
                                                        const std::string& file_name,
                                                        const std::string& owner_uuid,
                                                        const std::string& mime_type,
-                                                       const std::vector<uint8_t>& file_nonce,
-                                                       const std::vector<uint8_t>& enc_file_k,
-                                                       const std::vector<uint8_t>& k_file_nonce,
+                                                       const std::string& file_nonce,
+                                                       const std::string& enc_file_k,
+                                                       const std::string& k_file_nonce,
                                                        const Ed25519PrivateKey& private_key);
 
     std::pair<nlohmann::json, std::string> get_user_keys(const std::string& sender_user_uuid,
