@@ -1,0 +1,31 @@
+//
+// Created by Ruairi on 04/06/2025.
+//
+
+#ifndef USERMANAGER_H
+#define USERMANAGER_H
+
+#include <models/UserModel.h>
+#include "RemoteUserManager.h"
+#include "models/KEKModel.h"
+
+// Derived class for managing user data locally
+class UserManager: public RemoteUserManager {
+public:
+    UserManager();
+    void login(const std::string& username, const std::string& password);
+    void signup(const std::string& username, const std::string& email, const std::string& password);
+    void changePassword(const std::string& username, const std::string& password);
+
+    void handle_saving_remote_user_data(const nlohmann::json &server_response);
+
+protected:
+    void load(const std::string& identifier) override;
+    nlohmann::json save() override;
+private:
+    UserModel user_data;
+};
+
+
+
+#endif //USERMANAGER_H
