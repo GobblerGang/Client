@@ -1,82 +1,77 @@
 cmake_minimum_required(VERSION 3.27)
-project(CPlusPlusClient)
 
-# Enable vcpkg toolchain on Windows if available
+# Enable vcpkg toolchain on Windows if available (must be before project())
 if(WIN32 AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+    message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
 elseif(WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     message(WARNING "VCPKG_ROOT environment variable not set. Ensure vcpkg is integrated.")
 endif()
+
+project(CPlusPlusClient)
 
 # Allow local configuration overrides
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/local_config.cmake")
     include("${CMAKE_CURRENT_SOURCE_DIR}/local_config.cmake")
 endif()
 
-if(NOT DEFINED CMAKE_PREFIX_PATH)
-    set(CMAKE_PREFIX_PATH "" CACHE PATH "Additional CMake search path")
-endif()
-
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Add compiler flags to suppress specific warnings
+# Compiler warnings
 if(CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang|GNU")
-    # Add flags for Clang/GCC
     add_compile_options(
-            -Wno-deprecated-declarations   # Suppress warnings about deprecated C++17 features
-            -Wno-c++20-extensions          # Suppress warnings about C++20 extensions
-            -Wno-c++26-extensions          # Suppress warnings about C++26 extensions
+            -Wno-deprecated-declarations
+            -Wno-c++20-extensions
+            -Wno-c++26-extensions
     )
 elseif(MSVC)
-    # Add flags for MSVC
-    add_compile_options(
-            /wd4996  # Suppress warnings about deprecated functions
-    )
+    add_compile_options(/wd4996)
 endif()
 
-# Find Qt6
-if(NOT DEFINED Qt6_DIR)
+# Find Qt6 (try both paths)
+if(NOT Qt6_DIR)
     set(Qt6_DIR "" CACHE PATH "Path to Qt6 CMake directory")
 endif()
-
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 # Find other dependencies
 find_package(OpenSSL REQUIRED)
 find_package(SQLite3 REQUIRED)
+find_package(CURL REQUIRED)
 
-# Find Argon2 - different approaches for different platforms
+# Platform-specific Argon2 handling
 if(WIN32)
-    # Windows typically uses vcpkg
+    # Windows - use vcpkg
     find_path(ARGON2_INCLUDE_DIR NAMES argon2.h)
     find_library(ARGON2_LIBRARY NAMES argon2 libargon2)
-
-    if(NOT ARGON2_LIBRARY OR NOT ARGON2_INCLUDE_DIR)
-        message(FATAL_ERROR "Argon2 library not found. Install with: vcpkg install argon2")
+    if(NOT ARGON2_INCLUDE_DIR OR NOT ARGON2_LIBRARY)
+        message(FATAL_ERROR "Argon2 not found. Install with: vcpkg install argon2")
     endif()
 else()
-    # macOS/Unix typically has it in standard locations
+    # macOS/Unix - use pkg-config or system paths
     find_package(PkgConfig)
     pkg_check_modules(ARGON2 IMPORTED_TARGET libargon2)
 
     if(NOT ARGON2_FOUND)
+        # Fallback to manual find
         find_library(ARGON2_LIBRARY NAMES argon2)
         find_path(ARGON2_INCLUDE_DIR NAMES argon2.h)
-
         if(NOT ARGON2_LIBRARY OR NOT ARGON2_INCLUDE_DIR)
-            message(FATAL_ERROR "Argon2 library not found. Install with your package manager (e.g., brew install argon2)")
+            message(FATAL_ERROR "Argon2 not found. Install with: brew install argon2")
         endif()
     endif()
 endif()
 
-# Add source files
+# Source and header files (combined from both versions)
 set(SOURCES
         main.cpp
         UI.cpp
         src/auth.cpp
+        src/DataManager.cpp
         include/utils/CryptoUtils.cpp
         include/utils/MasterKey.cpp
         include/utils/VaultManager.cpp
@@ -86,7 +81,6 @@ set(SOURCES
         include/utils/dataclasses/Vault.cpp
 )
 
-# Add header files (for IDEs and tools that benefit from seeing them)
 set(HEADERS
         include/nlohmann/json.hpp
         include/sqlite_orm/sqlite_orm.h
@@ -101,6 +95,7 @@ set(HEADERS
         include/database/db_instance.h
         src/auth.h
         include/utils/dataclasses/Vault.h
+        src/DataManager.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
@@ -108,43 +103,37 @@ add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
 # Include directories
 target_include_directories(CPlusPlusClient PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 if(ARGON2_INCLUDE_DIR)
     target_include_directories(CPlusPlusClient PRIVATE ${ARGON2_INCLUDE_DIR})
 endif()
-find_package(CURL REQUIRED)
-include_directories(${CURL_INCLUDE_DIRS})
+
 # Link libraries
-target_link_libraries(CPlusPlusClient
+target_link_libraries(CPlusPlusClient PRIVATE
         Qt6::Core
         Qt6::Gui
         Qt6::Widgets
         OpenSSL::SSL
         OpenSSL::Crypto
-        ${CURL_LIBRARIES}
+        CURL::libcurl
+        SQLite::SQLite3
 )
 
 if(TARGET PkgConfig::ARGON2)
-    target_link_libraries(CPlusPlusClient PkgConfig::ARGON2)
+    target_link_libraries(CPlusPlusClient PRIVATE PkgConfig::ARGON2)
 elseif(ARGON2_LIBRARY)
-    target_link_libraries(CPlusPlusClient ${ARGON2_LIBRARY})
+    target_link_libraries(CPlusPlusClient PRIVATE ${ARGON2_LIBRARY})
 endif()
 
-if(TARGET SQLite::SQLite3)
-    target_link_libraries(CPlusPlusClient SQLite::SQLite3)
-elseif(SQLite3_LIBRARIES)
-    target_link_libraries(CPlusPlusClient ${SQLite3_LIBRARIES})
-endif()
-
-# Platform-specific deployment (Windows)
+# Platform-specific deployment (Windows only)
 if(WIN32)
     # Get Qt installation path from the target
     get_target_property(QT_LIB_LOCATION Qt6::Core LOCATION)
     get_filename_component(QT_INSTALL_BIN "${QT_LIB_LOCATION}" DIRECTORY)
     get_filename_component(QT_INSTALL_ROOT "${QT_INSTALL_BIN}/.." ABSOLUTE)
 
-    # Debug suffix
     set(DEBUG_SUFFIX "")
     if(CMAKE_BUILD_TYPE MATCHES "Debug")
         set(DEBUG_SUFFIX "d")
