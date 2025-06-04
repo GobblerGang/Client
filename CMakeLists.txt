@@ -67,14 +67,35 @@ else()
 endif()
 
 # Source and header files (combined from both versions)
-file(GLOB_RECURSE SOURCES
-        "src/*.cpp"
-        "include/*.cpp"
+set(SOURCES
+        main.cpp
+        UI.cpp
+        src/auth.cpp
+        src/DataManager.cpp
+        include/utils/CryptoUtils.cpp
+        include/utils/MasterKey.cpp
+        include/utils/VaultManager.cpp
+        include/utils/Ed25519Key.cpp
+        include/utils/X25519Key.cpp
+        include/utils/dataclasses/PAC.cpp
+        include/utils/dataclasses/Vault.cpp
 )
-file(GLOB_RECURSE HEADERS
-        "include/*.h"
-        "include/*.hpp"
-        "src/*.h"
+
+set(HEADERS
+        include/nlohmann/json.hpp
+        include/sqlite_orm/sqlite_orm.h
+        include/utils/dataclasses/PAC.h
+        include/utils/CryptoUtils.h
+        include/utils/MasterKey.h
+        include/utils/VaultManager.h
+        include/utils/Ed25519Key.h
+        include/utils/X25519Key.h
+        include/database/models.h
+        include/database/schema.hpp
+        include/database/db_instance.h
+        src/auth.h
+        include/utils/dataclasses/Vault.h
+        src/DataManager.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
