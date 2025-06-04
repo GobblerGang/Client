@@ -2,3 +2,5 @@ cmake-build-debug/
 .idea/
 local_config.cmake
 build
+vcpkg_installed
+cmake-build-debug-visual-studio
