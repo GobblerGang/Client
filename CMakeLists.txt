@@ -107,6 +107,8 @@ set(HEADERS
         src/RemoteUserManager.h
         src/models/UserModel.h
         src/models/UserModelORM.h
+        src/Server.h
+        include/utils/Config.cpp
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})

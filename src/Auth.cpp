@@ -14,10 +14,12 @@
 #include "utils/VaultManager.h"
 #include "utils/Ed25519Key.h"
 #include "utils/X25519Key.h"
+#include "utils/Config.cpp"
 
 // Add a configurable server URL
 namespace {
     const std::string DEFAULT_SERVER_URL = "https://gobblergang.gobbler.info";
+    const std::string url = Config::get_instance().server_url();
     std::string server_url = DEFAULT_SERVER_URL;
 }
 // Helper to get current ISO8601 time
