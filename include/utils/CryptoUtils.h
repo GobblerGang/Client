@@ -15,6 +15,8 @@ class CryptoUtils {
 public:
     static std::vector<uint8_t> derive_master_key(const std::string& password, const std::vector<uint8_t>& salt);
 
+    static std::vector<uint8_t> generate_nonce(std::size_t size = 12);
+
     static std::pair<std::vector<uint8_t>, std::vector<uint8_t>>
     encrypt_with_key(const std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
 
