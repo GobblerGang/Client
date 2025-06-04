@@ -5,16 +5,17 @@
 #ifndef DATAMANAGER_H
 #define DATAMANAGER_H
 #include <string>
+#include <nlohmann/json.hpp>
 
-
+// Base class for data management
 class DataManager {
 public:
     DataManager() = default;
 
     virtual ~DataManager() = default;
-
-    virtual std::string upload() const = 0;
-    virtual void get(const std::string& identifier) = 0;
+protected:
+    virtual nlohmann::json save() = 0;
+    virtual void load(const std::string& identifier) = 0;
 };
 
 

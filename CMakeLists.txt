@@ -78,6 +78,8 @@ set(SOURCES
         include/utils/X25519Key.cpp
         include/utils/dataclasses/PAC.cpp
         include/utils/dataclasses/Vault.cpp
+        src/UserManager.cpp
+        src/UserManager.h
 )
 
 set(HEADERS
@@ -96,9 +98,14 @@ set(HEADERS
         include/database/models.h
         src/models/file.h
         src/models/pac.h
-        src/models/user.h
-        src/models/kek.h
-        src/models/keys.h
+        src/models/RemoteUser.h
+        src/models/KEKModel.h
+        src/models/PublicKeys.h
+        src/UserManager.cpp
+        src/UserManager.h
+        src/RemoteUserManager.cpp
+        src/RemoteUserManager.h
+        src/models/UserModel.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
