@@ -80,6 +80,7 @@ set(SOURCES
         include/utils/dataclasses/Vault.cpp
         src/UserManager.cpp
         src/UserManager.h
+        src/Server.cpp
 )
 
 set(HEADERS

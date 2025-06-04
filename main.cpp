@@ -2,6 +2,8 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QInputDialog>
+
+#include "Server.h"
 #include "UI.cpp"
 #include "database/db_instance.h"
 #include "src/Auth.h"
@@ -9,6 +11,13 @@
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+
+    Server& server = Server::instance(); // Initialize server instance
+    bool ok = server.get_index();
+    if (!ok) {
+        QMessageBox::critical(nullptr, "Server Error", "Failed to connect to the server. Please check your network connection or server status.");
+        return 1;
+    }
 
     const MainWindowUI ui;
     QString currentUser;
