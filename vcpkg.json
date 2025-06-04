@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "argon2",
+    "curl",
+    "sqlite3",
+    "openssl",
+    "qtbase",
+    "nlohmann-json"
+  ]
+}
