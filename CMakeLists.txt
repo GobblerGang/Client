@@ -71,7 +71,6 @@ set(SOURCES
         main.cpp
         UI.cpp
         src/auth.cpp
-        src/DataManager.cpp
         include/utils/CryptoUtils.cpp
         include/utils/MasterKey.cpp
         include/utils/VaultManager.cpp
