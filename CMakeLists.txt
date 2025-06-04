@@ -108,6 +108,8 @@ set(HEADERS
         src/models/UserModelORM.h
         src/Server.h
         include/utils/Config.cpp
+        src/KekService.h
+        src/kekService.cpp
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
