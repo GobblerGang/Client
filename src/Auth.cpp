@@ -14,10 +14,12 @@
 #include "utils/VaultManager.h"
 #include "utils/Ed25519Key.h"
 #include "utils/X25519Key.h"
+#include "utils/Config.cpp"
 
 // Add a configurable server URL
 namespace {
     const std::string DEFAULT_SERVER_URL = "https://gobblergang.gobbler.info";
+    const std::string url = Config::get_instance().server_url();
     std::string server_url = DEFAULT_SERVER_URL;
 }
 // Helper to get current ISO8601 time
@@ -159,7 +161,7 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     }
 
     // Prepare User struct
-    UserModel user;
+    UserLocal user;
     user.uuid = uuid;
     user.username = username;
     user.email = email;
@@ -177,7 +179,7 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     user.opks_json = vault_map["opks"];
 
     // Prepare UserKEK struct (assumes you have a UserKEK struct/table)
-    KEKModel userKek;
+    KEKLocal userKek;
     userKek.enc_kek = kek_ciphertext_b64;
     userKek.kek_nonce = kek_nonce_b64;
 
@@ -209,12 +211,12 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
 
 // --- HELPERS ---
 bool Auth::usernameExists(const std::string& username) {
-    auto users = db().get_all<UserModel>(where(c(&UserModel::username) == username));
+    auto users = db().get_all<UserLocal>(where(c(&UserLocal::username) == username));
     return !users.empty();
 }
 
 bool Auth::emailExists(const std::string& email) {
-    auto users = db().get_all<UserModel>(where(c(&UserModel::email) == email));
+    auto users = db().get_all<UserLocal>(where(c(&UserLocal::email) == email));
     return !users.empty();
 }
 
