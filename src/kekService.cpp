@@ -38,28 +38,3 @@ std::string KekService::get_current_iso8601_utc() {
     return oss.str();
 }
 
-#ifdef KEK_SERVICE_TEST_MAIN
-#include <iostream>
-
-int main() {
-    std::vector<uint8_t> kek = {1,2,3,4,5,6,7,8,9,0};
-    std::vector<uint8_t> master_key = {10,11,12,13,14,15,16,17,18,19};
-    std::string user_uuid = "test-uuid";
-    int user_id = 42;
-
-    KEKModel model = KekService::encrypt_kek(kek, master_key, user_uuid, user_id);
-
-    std::cout << "enc_kek_cyphertext: " << model.enc_kek_cyphertext << std::endl;
-    std::cout << "nonce: " << model.nonce << std::endl;
-    std::cout << "updated_at: " << model.updated_at << std::endl;
-    std::cout << "user_id: " << model.user_id << std::endl;
-
-    // Simple checks
-    if (model.enc_kek_cyphertext.empty() || model.nonce.empty()) {
-        std::cerr << "Test failed: ciphertext or nonce is empty." << std::endl;
-        return 1;
-    }
-    std::cout << "KEKService::encrypt_kek test passed." << std::endl;
-    return 0;
-}
-#endif
