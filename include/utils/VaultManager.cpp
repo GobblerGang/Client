@@ -59,7 +59,7 @@ std::vector<uint8_t> VaultManager::base64_decode(const std::string& input) {
     return buffer;
 }
 
-std::map<std::string, std::string> VaultManager::get_user_vault(const UserLocal& user) {
+std::map<std::string, std::string> VaultManager::get_user_vault(const UserModel& user) {
     return {
             {"salt", user.salt},
             

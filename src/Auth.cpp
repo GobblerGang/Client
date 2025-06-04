@@ -87,9 +87,6 @@ static std::vector<uint8_t> generateSalt(size_t len = 16) {
     return salt;
 }
 
-
-
-
 // --- SIGNUP ---
 Auth::SignUpResult Auth::signup(const std::string& username, const std::string& email, const std::string& password) {
     if (usernameExists(username)) {

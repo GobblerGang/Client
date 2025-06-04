@@ -46,7 +46,7 @@ You must create a `config.json` file and place it in your `cmake-build-debug` di
 This file should contain your server URL in the following format:
 ```json
 {
-  "server-url": "https://your-server-url.com"
+  "server_url": "https://your-server-url.com"
 }
 ```
 The application will read this file to determine which server to connect to.

@@ -2,6 +2,8 @@
 #include <string>
 #include <fstream>
 #include "nlohmann/json.hpp"
+#include <filesystem>
+#include <iostream>
 
 class Config {
 public:
@@ -14,6 +16,11 @@ public:
 
 private:
     Config() {
+        std::cout << "Current working directory: "
+                  << std::filesystem::current_path() << std::endl;
+        for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path())) {
+            std::cout << entry.path().filename().string() << std::endl;
+        }
         std::ifstream file("config.json");
         if (!file) throw std::runtime_error("Missing config.json");
 
