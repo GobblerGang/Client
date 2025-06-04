@@ -109,6 +109,9 @@ set(HEADERS
         src/Server.h
         include/utils/Config.cpp
         src/models/File.cpp
+        src/KekService.h
+        src/kekService.cpp
+
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})

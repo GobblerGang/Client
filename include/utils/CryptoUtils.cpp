@@ -22,6 +22,14 @@ std::vector<uint8_t> CryptoUtils::derive_master_key(const std::string& password,
     return key;
 }
 
+std::vector<uint8_t> CryptoUtils::generate_nonce(std::size_t size) {
+    std::vector<uint8_t> nonce(size);
+    if (RAND_bytes(nonce.data(), static_cast<int>(size)) != 1) {
+        throw std::runtime_error("Failed to generate secure nonce");
+    }
+    return nonce;
+}
+
 std::pair<std::vector<uint8_t>, std::vector<uint8_t>> CryptoUtils::encrypt_with_key(const std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data) {
     std::vector<uint8_t> nonce(12);
     RAND_bytes(nonce.data(), nonce.size());
