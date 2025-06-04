@@ -113,7 +113,8 @@ target_include_directories(CPlusPlusClient PRIVATE
 if(ARGON2_INCLUDE_DIR)
     target_include_directories(CPlusPlusClient PRIVATE ${ARGON2_INCLUDE_DIR})
 endif()
-
+find_package(CURL REQUIRED)
+include_directories(${CURL_INCLUDE_DIRS})
 # Link libraries
 target_link_libraries(CPlusPlusClient
         Qt6::Core
@@ -121,6 +122,7 @@ target_link_libraries(CPlusPlusClient
         Qt6::Widgets
         OpenSSL::SSL
         OpenSSL::Crypto
+        ${CURL_LIBRARIES}
 )
 
 if(TARGET PkgConfig::ARGON2)
