@@ -71,7 +71,6 @@ set(SOURCES
         main.cpp
         UI.cpp
         src/auth.cpp
-        src/DataManager.cpp
         include/utils/CryptoUtils.cpp
         include/utils/MasterKey.cpp
         include/utils/VaultManager.cpp
@@ -95,7 +94,6 @@ set(HEADERS
         include/database/db_instance.h
         src/auth.h
         include/utils/dataclasses/Vault.h
-        src/DataManager.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})

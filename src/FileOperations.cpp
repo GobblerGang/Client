@@ -115,21 +115,21 @@ void processFileChunks(const QString& path) {
 
     const int chunkSize = 1024;
     char* buffer = new char[chunkSize];
-    
+
     while (!file.atEnd()) {
         qint64 bytesRead = file.read(buffer, chunkSize);
         if (bytesRead <= 0) break;
-        
+
         // Demonstrate array-pointer relationship
         char* current = buffer;
         char* end = buffer + bytesRead;
-        
+
         while (current < end) {
             *current = toupper(*current);
             ++current;
         }
     }
-    
+
     delete[] buffer;
     file.close();
 }
@@ -169,4 +169,4 @@ void processFilePath(QString path) {  // Call by value
 
 void processFilePathRef(QString& path) {  // Call by reference
     path = path.toUpper();
-} 
+}
