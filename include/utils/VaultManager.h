@@ -21,7 +21,7 @@ class VaultManager {
     friend class CryptoUtils;
 
 public:
-    static std::map<std::string, std::string> get_user_vault(const UserModel& user);
+    static auto get_user_vault(const UserLocal &user) -> std::map<std::string, std::string>;
     
     static std::optional<std::tuple<std::vector<uint8_t>, std::vector<uint8_t>, std::vector<uint8_t>>>
     try_decrypt_private_keys(const std::map<std::string, std::string>& vault,

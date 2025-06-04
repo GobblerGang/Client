@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-struct KEKModel {
+struct KEKLocal {
     int id;
     std::string enc_kek;
     std::string kek_nonce;
@@ -9,7 +9,7 @@ struct KEKModel {
     int user_id;
 };
 
-struct UserModel {
+struct UserLocal {
     int id;
     std::string uuid;
     std::string username;

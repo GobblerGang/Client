@@ -41,6 +41,15 @@ For both platforms, you may need to create a `local_config.cmake` file in the pr
 `set(Qt6_DIR "path/to/qt/cmake")
 set(OpenSSL_ROOT_DIR "path/to/openssl")`
 
+### Server URL Configuration
+You must create a `config.json` file and place it in your `cmake-build-debug` directory.  
+This file should contain your server URL in the following format:
+```json
+{
+  "server-url": "https://your-server-url.com"
+}
+```
+The application will read this file to determine which server to connect to.
 
 ## Troubleshooting
 - If you get Qt not found errors, verify your Qt installation path
