@@ -65,9 +65,11 @@ bool send_registration(
     };
 
     std::string json_str = payload.dump();
+    // #Raw Pointer
     CURL* curl = curl_easy_init();
     if (!curl) return false;
 
+    // #Raw Pointer to Struct
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
     std::string url = server_url + "/api/register";
@@ -227,8 +229,9 @@ std::optional<std::string> Auth::requestUUIDFromServer() {
     std::string url = server_url + "/api/generate-uuid";
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    // #Raw Pointer in Lambda
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
-        auto* str = static_cast<std::string*>(userdata);
+        auto* str = static_cast<std::string*>(userdata);  // Pointer casting
         str->append(ptr, size * nmemb);
         return size * nmemb;
     });

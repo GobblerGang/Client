@@ -23,7 +23,6 @@ struct UserModel: RemoteUser, PublicKeys {
     std::string x25519_identity_key_private_enc;
     std::string x25519_identity_key_private_nonce;
 
-
     // Signed prekey fields
     std::string signed_prekey_private_enc;
     std::string signed_prekey_private_nonce;
@@ -31,30 +30,37 @@ struct UserModel: RemoteUser, PublicKeys {
     // One-time prekeys as JSON
     std::string opks_json;
 
-    // In UserModel.h, inside struct UserModel
+    // #Operator Overloading
+    // Overloads the assignment operator to copy data from UserModelORM
+    // Demonstrates custom behavior for operator= with user-defined types
     UserModel& operator=(const UserModelORM& orm) {
-        id = orm.id;
-        uuid = orm.uuid;
-        username = orm.username;
-        email = orm.email;
-        ed25519_identity_key_public = orm.ed25519_identity_key_public;
-        ed25519_identity_key_private_enc = orm.ed25519_identity_key_private_enc;
-        ed25519_identity_key_private_nonce = orm.ed25519_identity_key_private_nonce;
-        x25519_identity_key_public = orm.x25519_identity_key_public;
-        x25519_identity_key_private_enc = orm.x25519_identity_key_private_enc;
-        x25519_identity_key_private_nonce = orm.x25519_identity_key_private_nonce;
-        salt = orm.salt;
-        signed_prekey_public = orm.signed_prekey_public;
-        signed_prekey_signature = orm.signed_prekey_signature;
-        signed_prekey_private_enc = orm.signed_prekey_private_enc;
-        signed_prekey_private_nonce = orm.signed_prekey_private_nonce;
-        opks_json = orm.opks_json;
+        this->uuid = orm.uuid;
+        this->username = orm.username;
+        this->email = orm.email;
+        this->salt = orm.salt;
+        this->ed25519_identity_key_public = orm.ed25519_identity_key_public;
+        this->ed25519_identity_key_private_enc = orm.ed25519_identity_key_private_enc;
+        this->ed25519_identity_key_private_nonce = orm.ed25519_identity_key_private_nonce;
+        this->x25519_identity_key_public = orm.x25519_identity_key_public;
+        this->x25519_identity_key_private_enc = orm.x25519_identity_key_private_enc;
+        this->x25519_identity_key_private_nonce = orm.x25519_identity_key_private_nonce;
+        this->signed_prekey_public = orm.signed_prekey_public;
+        this->signed_prekey_signature = orm.signed_prekey_signature;
+        this->signed_prekey_private_enc = orm.signed_prekey_private_enc;
+        this->signed_prekey_private_nonce = orm.signed_prekey_private_nonce;
+        this->opks_json = orm.opks_json;
         return *this;
     }
-    // Explicit makes it so the compiler cant automatically convert UserModelORM to UserModel (stops unwanted conversions)
+
+    // #Explicit Constructor (call by const reference)
+    // Creates a new UserModel from a UserModelORM instance
+    // Uses this pointer implicitly through the assignment operator
     explicit UserModel(const UserModelORM& orm) {
         *this = orm; // Uses the assignment operator
     }
-    UserModel() = default; // Default constructor
+
+    // #Default Constructor
+    // Creates a new UserModel with default values
+    UserModel() = default;
 };
 #endif //USERMODEL_H
