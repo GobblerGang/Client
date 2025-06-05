@@ -165,7 +165,7 @@ void Server::create_user(const nlohmann::json &user_data) {
     }
 }
 
-std::string sign_payload(
+std::string Server::sign_payload(
     const std::vector<uint8_t>& payload,
     const std::string& nonce,
     const Ed25519PrivateKey& private_key

@@ -3,8 +3,6 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include <curl/curl.h>
-#include "Headers.h"
-
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
