@@ -77,7 +77,7 @@ bool Server::get_index() {
     return resp.success;
 }
 
-std::pair<std::string, std::string> Server::get_server_nonce(const std::string &user_uuid) {
+std::string Server::get_server_nonce(const std::string &user_uuid) {
     HttpResponse resp = get_request(server_url_ + "/api/nonce?user_uuid=" + user_uuid);
     if (!resp.success) {
         throw std::runtime_error("Failed to get nonce: " + resp.body);
@@ -90,8 +90,7 @@ std::pair<std::string, std::string> Server::get_server_nonce(const std::string &
         if (json_response.contains("nonce") && json_response.contains("timestamp") &&
             json_response["nonce"].is_string() && json_response["timestamp"].is_string()) {
             std::string nonce = json_response["nonce"];
-            std::string timestamp = json_response["timestamp"];
-            return {nonce, timestamp};
+            return nonce;
             } else {
                 throw std::runtime_error("Nonce or timestamp not found in response");
             }

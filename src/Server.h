@@ -105,7 +105,7 @@ private:
 
     // Functions for setting/signing headers
 
-    std::pair<std::string, std::string> Server::get_server_nonce(const std::string &user_uuid);
+    std::string Server::get_server_nonce(const std::string &user_uuid);
 
     std::string sign_payload(const std::vector<uint8_t>& payload, const std::string& nonce, const Ed25519PrivateKey& private_key);
 
