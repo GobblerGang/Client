@@ -56,4 +56,5 @@ void UserManager::handle_saving_remote_user_data(const nlohmann::json& server_re
 std::vector<uint8_t> get_decrypted_kek() {
     // MasterKey& master_key = MasterKey::instance();
     // str:: string user_uuid = user_data.uuid;
+    return std::vector<uint8_t>();
 };
