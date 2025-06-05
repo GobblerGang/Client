@@ -40,6 +40,10 @@ public:
     
     static std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>
     decrypt_all_opks(const std::string& opks_json, const std::vector<uint8_t>& master_key);
+    static const std::vector<uint8_t>& get_ed25519_identity_associated_data();
+    static const std::vector<uint8_t>& get_x25519_identity_associated_data();
+    static const std::vector<uint8_t>& get_spk_associated_data();
+    static const std::vector<uint8_t>& get_opk_associated_data();
 
 private:
     // Private methods if any

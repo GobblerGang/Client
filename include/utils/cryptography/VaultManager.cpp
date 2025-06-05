@@ -20,6 +20,19 @@ const std::vector<uint8_t> VaultManager::x25519_identity_associated_data = {'x',
 const std::vector<uint8_t> VaultManager::spk_associated_data = {'s','i','g','n','e','d','_','p','r','e','k','e','y'};
 const std::vector<uint8_t> VaultManager::opk_associated_data = {'o','p','k'};
 
+const std::vector<uint8_t>& VaultManager::get_ed25519_identity_associated_data() {
+    return ed25519_identity_associated_data;
+}
+const std::vector<uint8_t>& VaultManager::get_x25519_identity_associated_data() {
+    return x25519_identity_associated_data;
+}
+const std::vector<uint8_t>& VaultManager::get_spk_associated_data() {
+    return spk_associated_data;
+}
+const std::vector<uint8_t>& VaultManager::get_opk_associated_data() {
+    return opk_associated_data;
+}
+
 std::map<std::string, std::string> VaultManager::get_user_vault(const UserModel& user) {
     return {
             {"salt", user.salt},

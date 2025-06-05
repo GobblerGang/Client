@@ -138,14 +138,61 @@ void UserManager::changePassword(const std::string& user_uuid, const std::string
     // Implement change password logic here
     // 1. Check if the old password is correct
     load(user_uuid);
+    if (user_data.username.empty()) {
+        throw std::runtime_error("User not found with UUID: " + user_uuid);
+    }
     check_kek_freshness();
     setKEK(std::make_shared<const KEKModel>(get_local_kek(user_data.id)));
-    const std::vector<uint8_t> salt_bytes = CryptoUtils::base64_decode(user_data.salt);
-    std::vector<uint8_t> old_master_key = MasterKey::instance().derive_key(old_password,salt_bytes);
+    const std::vector<uint8_t> old_salt_bytes = CryptoUtils::base64_decode(user_data.salt);
+    const std::vector<uint8_t> old_master_key = MasterKey::instance().derive_key(old_password,old_salt_bytes);
 
-    std::vector<uint8_t> kek = get_decrypted_kek();
+    const std::vector<uint8_t> kek = get_decrypted_kek(old_master_key);
+    if (kek.empty()) {
+        throw std::runtime_error("Failed to decrypt KEK with old password.");
+    }
+    // 2. Generate new Master key
+    const std::vector<uint8_t> new_salt_bytes = CryptoUtils::generate_nonce(16);
+    const std::vector<uint8_t> new_master_key = MasterKey::instance().derive_key(new_password, new_salt_bytes);
 
+    // 3. Encrypt KEK with new Master key
+    KEKModel new_kek_model = KekService::encrypt_kek(
+        kek,
+        new_master_key,
+        user_data.uuid,
+        user_data.id // Use the current user ID
+    );
+    new_kek_model.id = getKEK().id; // Preserve the existing KEK ID
+    setKEK(std::make_shared<const KEKModel>(new_kek_model));
+    // 4. Update user data
+    user_data.salt = CryptoUtils::base64_encode(new_salt_bytes);
 
+    // 5. Get Ed25519 IK private for signing request header
+    auto ed25519_private_key_bytes = CryptoUtils::decrypt_with_key(
+        CryptoUtils::base64_decode(user_data.ed25519_identity_key_private_enc),
+        CryptoUtils::base64_decode(user_data.ed25519_identity_key_private_nonce),
+        new_master_key,
+        VaultManager::get_ed25519_identity_associated_data()
+    );
+    if (ed25519_private_key_bytes.empty()) {
+        throw std::runtime_error("Failed to decrypt Ed25519 identity key with new password.");
+    }
+    Ed25519PrivateKey ed25519_private_key(ed25519_private_key_bytes);
+    nlohmann::json server_response = Server::instance().update_kek_info(
+        new_kek_model.enc_kek_cyphertext,
+        new_kek_model.nonce,
+        new_kek_model.updated_at,
+        user_data.uuid,
+        ed25519_private_key
+    );
+    // write the new KEK to the database
+    if (server_response.empty()) {
+        throw std::runtime_error("Failed to update KEK info on server.");
+    }
+    // Update the KEK in the database
+    if (new_kek_model.id <= 0) {
+        throw std::runtime_error("Invalid KEK ID.");
+    }
+    db().update(new_kek_model);
 }
 void UserManager::handle_saving_remote_user_data() {
 
