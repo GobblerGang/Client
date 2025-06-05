@@ -228,6 +228,7 @@ nlohmann::json Server::update_kek_info(const std::string &encrypted_kek,
 //
 // }
 
+
 std::string Server::get_new_user_uuid() {
     HttpResponse resp = get_request(server_url_ + "/api/generate-uuid");
     nlohmann::json json_response = parse_and_check_response(resp, "get_new_user_uuid");
