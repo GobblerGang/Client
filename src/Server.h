@@ -6,6 +6,7 @@
 #include "RequestHeaders.h"
 #include "models/KEKModel.h"
 #include "models/UserModel.h"
+#include "models/File.h"
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
@@ -63,14 +64,7 @@ public:
 
     // #Function Declaration (call by const reference, returns by value)
     // Uploads a file to the server
-    std::pair<nlohmann::json, std::string> upload_file(const std::string& file_ciphertext,
-                                                       const std::string& file_name,
-                                                       const std::string& owner_uuid,
-                                                       const std::string& mime_type,
-                                                       const std::string& file_nonce,
-                                                       const std::string& enc_file_k,
-                                                       const std::string& k_file_nonce,
-                                                       const Ed25519PrivateKey& private_key);
+    std::pair<nlohmann::json, std::string> upload_file( File file, const std::string &owner_uuid, const Ed25519PrivateKey &private_key);
 
     std::pair<nlohmann::json, std::string> get_user_keys(const std::string& sender_user_uuid,
                                                          const std::string& recipient_uuid,

@@ -3,8 +3,13 @@
 //
 #include <iostream>
 #include <Server.h>
-
+#include <curl/curl.h>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <nlohmann/json.hpp>
 #include "models/KEKModel.h"
+#include "models/File.h"
 #include "utils/Config.h"
 #include "utils/cryptography/CryptoUtils.h"
 #include "utils/cryptography/keys/Ed25519Key.h"
@@ -226,6 +231,82 @@ UserModel Server::get_user_by_name(const std::string& username) {
     std::cout << "Fetched user: " << user.username << " with UUID: " << user.uuid << std::endl;
     return user;
 }
+
+std::pair<nlohmann::json, std::string> Server::upload_file(File file, const std::string &owner_uuid, const Ed25519PrivateKey &private_key)
+{
+    nlohmann::json payload = {
+        {"file_name", file.file_name},
+        {"enc_file_ciphertext", file.enc_file_ciphertext},
+        {"mime_type", file.mime_type},
+        {"file_nonce", file.file_nonce},
+        {"enc_file_k", file.enc_file_k},
+        {"k_file_nonce", file.k_file_nonce}
+    };
+
+    std::vector<std::string> headers = set_headers(private_key, owner_uuid, payload);
+    const std::string url = server_url() + "/api/files/upload";
+
+    HttpResponse res = post_request(url, payload.dump(), headers);
+
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+        return {json_response, ""};
+    } catch (const std::exception& e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
+// libcurl callback to store response data
+static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+    size_t total_size = size * nmemb;
+    std::string* response = static_cast<std::string*>(userp);
+    response->append(static_cast<char*>(contents), total_size);
+    return total_size;
+}
+
+HttpResponse post_request(const std::string& url, const std::string& payload, const std::vector<std::string>& headers_vec) {
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        return {0, "", false, CURLE_FAILED_INIT};
+    }
+
+    std::string response_str;
+    struct curl_slist* curl_headers = nullptr;
+    curl_headers = curl_slist_append(curl_headers, "Content-Type: application/json");
+    for (const auto& header : headers_vec) {
+        curl_headers = curl_slist_append(curl_headers, header.c_str());
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_str);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+
+    CURLcode res = curl_easy_perform(curl);
+    long status_code = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
+
+    curl_slist_free_all(curl_headers);
+    curl_easy_cleanup(curl);
+
+    return {
+        status_code,
+        response_str,
+        res == CURLE_OK,
+        res
+    };
+}
+
+
 //TODO
 // std::pair<nlohmann::json, std::string> Server::get_user_by_name(const std::string &username) {
 // }
