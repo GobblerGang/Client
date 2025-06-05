@@ -15,7 +15,7 @@ public:
     void login(const std::string& username, const std::string& password);
 
     bool signup(const std::string &username, const std::string &email, const std::string &password);
-    void changePassword(const std::string& username, const std::string& password);
+    void changePassword(const std::string& user_uuid, const std::string& old_password, const std::string &new_password);
     bool checkKek();
     void handle_saving_remote_user_data();
 
@@ -23,7 +23,7 @@ public:
     void setUser(const std::string& username, const std::string& email);
     std::vector<uint8_t> get_decrypted_kek() const;
 
-    bool check_kek_freshness();
+    bool check_kek_freshness() const;
 protected:
     void load(const std::string& identifier) override;
     nlohmann::json save() override;

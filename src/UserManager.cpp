@@ -83,6 +83,12 @@ nlohmann::json UserManager::save() {
 void UserManager::load(const std::string& identifier) {
     // Implement get logic here
     // Use setUser(UserModel) from db or from server
+    auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::uuid) == identifier));
+    if (users.empty()) {
+        throw std::runtime_error("User not found with username: " + identifier);
+    }
+    const UserModelORM user = users.front();
+    setUser(UserModel(user));
 }
 
 void UserManager::login(const std::string& username, const std::string& password) {
@@ -128,8 +134,13 @@ bool UserManager::signup(const std::string &username, const std::string &email, 
     return true; // Return true if signup is successful
 }
 
-void UserManager::changePassword(const std::string& username, const std::string& password) {
+void UserManager::changePassword(const std::string& user_uuid, const std::string& old_password, const std::string &new_password) {
     // Implement change password logic here
+    // 1. Check if the old password is correct
+    load(user_uuid);
+    bool is_fresh = check_kek_freshness();
+
+
 }
 void UserManager::handle_saving_remote_user_data() {
 
@@ -156,7 +167,7 @@ std::vector<uint8_t> UserManager::get_decrypted_kek() const {
 };
 
 
-bool UserManager::check_kek_freshness() {
+bool UserManager::check_kek_freshness() const {
     // Fetch KEK info from server
     KEKModel server_kek_info = Server::instance().get_kek_info(user_data.uuid);
 
