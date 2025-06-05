@@ -367,3 +367,10 @@ bool CryptoUtils::verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_pu
         return false;
     }
 }
+std::vector<uint8_t> CryptoUtils::generate_salt(size_t length) {
+    std::vector<uint8_t> salt(length);
+    if (RAND_bytes(salt.data(), static_cast<int>(length)) != 1) {
+        throw std::runtime_error("Failed to generate salt");
+    }
+    return salt;
+}

@@ -9,7 +9,8 @@
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
-
+/** * @brief Struct to hold HTTP response data.
+ */
 struct HttpResponse {
     long status_code;
     std::string body;
@@ -17,7 +18,9 @@ struct HttpResponse {
     CURLcode curl_code;
 };
 
-// Singleton Server class to handle all server interactions
+/** * @brief Singleton class to manage server interactions.
+ * This class provides methods to interact with the server for user management, file uploads, and other operations.
+ */
 class Server {
 public:
     // Singleton instance access
@@ -27,8 +30,12 @@ public:
     Server& operator=(const Server&) = delete;
     Server(Server&&) = delete;
     Server& operator=(Server&&) = delete;
-
-    nlohmann::json create_user(const nlohmann::json& user_data) const;
+    /**
+     * @brief Creates a new user on the server. POSTs to url/api/users
+     * @param user_data A JSON object containing user data (username, email, password).
+     * @throws std::runtime_error if the server request fails or returns an error.
+     */
+    void create_user(const nlohmann::json& user_data);
     /**
      * @brief Generates a new UUID for the user. GETs url/api/generate-uuid
      * @return A string containing the new UUID.
@@ -94,11 +101,31 @@ private:
     // Helper function to clean up CURL
     void cleanup_curl();
 
-    // Helper function to perform a POST request
-    HttpResponse post_request(const std::string& url, const nlohmann::json& payload);
+    /**
+     * @brief Performs a POST request to the specified URL with the given payload.
+     * @param url The URL to send the POST request to.
+     * @param payload The JSON payload to send in the request body.
+     * @param headers Optional headers to include in the request.
+     * @return An HttpResponse object containing the response data.
+     */
+    HttpResponse post_request(const std::string& url, const nlohmann::json& payload, const std::vector<std::string>& headers = {});
 
-    // Helper function to perform a GET request
+    /**
+     * @brief Performs a GET request to the specified URL.
+     * @param url The URL to send the GET request to.
+     * @param headers Optional headers to include in the request.
+     * @return An HttpResponse object containing the response data.
+     */
     HttpResponse get_request(const std::string& url, const std::vector<std::string>& headers = {});
+
+    /**
+     * @brief Performs a PUT request to the specified URL with the given payload.
+     * @param url The URL to send the PUT request to.
+     * @param payload The JSON payload to send in the request body.
+     * @param headers Optional headers to include in the request.
+     * @return An HttpResponse object containing the response data.
+     */
+    HttpResponse put_request(const std::string& url, const nlohmann::json& payload, const std::vector<std::string>& headers = {});
 
     // // Helper function to parse server response
     // std::optional<nlohmann::json> parse_server_response(const nlohmann::json response_body, int status_code);
@@ -109,6 +136,18 @@ private:
 
     std::string sign_payload(const std::vector<uint8_t>& payload, const std::string& nonce, const Ed25519PrivateKey& private_key);
 
-    nlohmann::json set_headers(const Ed25519PrivateKey& private_key, const std::string& user_uuid, const nlohmann::json& payload);
+    std::vector<std::string> set_headers(const Ed25519PrivateKey& private_key, const std::string& user_uuid, const nlohmann::json& payload);
+
+    /**
+     * @brief Performs a request to the specified URL with the given payload.
+     * @param url The URL to send the request to.
+     * @param headers Optional headers to include in the request.
+     * @param payload The JSON payload to send in the request body.
+     * @param is_post Boolean indicating if the request is a POST request.
+     * @param is_put Boolean indicating if the request is a PUT request.
+     * @return An HttpResponse object containing the response data.
+     */
+    HttpResponse perform_request(const std::string& url, const std::vector<std::string>& headers, const std::string* payload, bool is_post, bool is_put = false);
 
 };
+

@@ -60,4 +60,6 @@ public:
     );
 
     static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key); // Ed25519
+
+    static std::vector<uint8_t> generate_salt(size_t length = 16);
 };
