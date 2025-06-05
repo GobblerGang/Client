@@ -20,6 +20,8 @@
 #include <string>
 #include <utility>
 
+#include "utils/dataclasses/Vault.h"
+
 UserManager::UserManager() {
     user_data = UserModel();
 }
@@ -285,5 +287,66 @@ void UserManager::check_kek_freshness() {
     if (!server_updated_at.empty() && local_updated_at != server_updated_at) {
         throw std::runtime_error(
             "Your password was changed on another device. Please use the new password. Server updated at: " + server_updated_at);
+    }
+}
+
+nlohmann::json UserManager::export_keys() {
+    nlohmann::json keys_json;
+    load(user_data.uuid);
+    keys_json["ed25519_identity_key_public"]= user_data.ed25519_identity_key_public;
+    keys_json["ed25519_identity_key_private_enc"] = user_data.ed25519_identity_key_private_enc;
+    keys_json["ed25519_identity_key_private_nonce"] = user_data.ed25519_identity_key_private_nonce;
+    keys_json["x25519_identity_key_public"] = user_data.x25519_identity_key_public;
+    keys_json["x25519_identity_key_private_enc"] = user_data.x25519_identity_key_private_enc;
+    keys_json["x25519_identity_key_private_nonce"] = user_data.x25519_identity_key_private_nonce;
+    keys_json["signed_prekey_public"] = user_data.signed_prekey_public;
+    keys_json["signed_prekey_signature"] = user_data.signed_prekey_signature;
+    keys_json["signed_prekey_private_enc"] = user_data.signed_prekey_private_enc;
+    keys_json["signed_prekey_private_nonce"] = user_data.signed_prekey_private_nonce;
+    keys_json["opks"] = user_data.opks;
+    return keys_json;
+}
+
+void UserManager::import_keys(const nlohmann::json& keys, const std::string &password, const std::string &username) {
+    // Load user data from keys
+     if (! db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username)).empty()) {
+         throw std::runtime_error("User already exists locally with username: " + username);
+     }
+
+    auto user = Server::instance().get_user_by_name(username);
+    user_data = user;
+    std::cout << user.uuid << std::endl;
+    std::vector<uint8_t> salt_bytes = CryptoUtils::base64_decode(user.salt);
+    if (salt_bytes.empty()) {
+        throw std::runtime_error("Invalid salt in user data.");
+    }
+    std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt_bytes);
+    setKEK(std::make_shared<KEKModel>(Server::instance().get_kek_info(user_data.uuid)));
+    auto [kek, _aad] = KekService::decrypt_kek(getKEK(), master_key, user_data.uuid);
+    if (kek.empty()) {
+        throw std::runtime_error("Failed to decrypt KEK with provided password.");
+    }
+
+    user_data.ed25519_identity_key_public = keys["ed25519_identity_key_public"];
+    user_data.ed25519_identity_key_private_enc = keys["ed25519_identity_key_private_enc"];
+    user_data.ed25519_identity_key_private_nonce = keys["ed25519_identity_key_private_nonce"];
+    user_data.x25519_identity_key_public = keys["x25519_identity_key_public"];
+    user_data.x25519_identity_key_private_enc= keys["x25519_identity_key_private_enc"];
+    user_data.x25519_identity_key_private_nonce = keys["x25519_identity_key_private_nonce"];
+    user_data.signed_prekey_public = keys["signed_prekey_public"];
+    user_data.signed_prekey_signature = keys["signed_prekey_signature"];
+    user_data.signed_prekey_private_enc = keys["signed_prekey_private_enc"];
+    user_data.signed_prekey_private_nonce = keys["signed_prekey_private_nonce"];
+    // user_data.opks = keys["opks"].dump();
+    UserModelORM user_orm;
+    user_orm = user_data;
+    KEKModel kek_model = getKEK();
+    int user_id = db().insert(user_orm);
+    kek_model.user_id = user_id;
+    if (!user_id) {
+        throw std::runtime_error("Failed to save user data to database.");
+    }
+    if (!db().insert(kek_model)) {
+        throw std::runtime_error("Failed to save KEK data to database.");
     }
 }

@@ -207,22 +207,23 @@ UserModel Server::get_user_by_name(const std::string& username) {
 
     // Parse response
     nlohmann::json response_json = nlohmann::json::parse(resp.body); // Use resp.body instead of resp
-    if (!response_json.contains("user")) {
+    if (response_json.contains("error")) {
+        std::cout << response_json.dump() << std::endl;
         return UserModel();
     }
 
     // Convert JSON to UserModel
     UserModel user;
-    user.uuid = response_json["user"]["uuid"];
-    user.username = response_json["user"]["username"];
-    user.email = response_json["user"]["email"];
-    user.salt = response_json["user"]["salt"];
-    user.ed25519_identity_key_public = response_json["user"]["ed25519_identity_key_public"];
-    user.x25519_identity_key_public = response_json["user"]["x25519_identity_key_public"];
-    user.signed_prekey_public = response_json["user"]["signed_prekey_public"];
-    user.signed_prekey_signature = response_json["user"]["signed_prekey_signature"];
-    user.opks_json = response_json["user"]["opks"].dump();
-
+    user.uuid = response_json["uuid"];
+    user.username = response_json["username"];
+    user.email = response_json["email"];
+    user.salt = response_json["salt"];
+    user.ed25519_identity_key_public = response_json["ed25519_identity_key_public"];
+    user.x25519_identity_key_public = response_json["x25519_identity_key_public"];
+    user.signed_prekey_public = response_json["signed_prekey_public"];
+    user.signed_prekey_signature = response_json["signed_prekey_signature"];
+    user.opks_json = response_json["opks"].dump();
+    std::cout << "Fetched user: " << user.username << " with UUID: " << user.uuid << std::endl;
     return user;
 }
 //TODO
