@@ -7,8 +7,10 @@
 #include <string>
 
 struct UserModel;
-// Flat struct for ORM
+
+// Flat struct for ORM (Object-Relational Mapping)
 struct UserModelORM {
+    // #Member Variables
     int id;
     std::string uuid;
     std::string username;
@@ -26,6 +28,9 @@ struct UserModelORM {
     std::string signed_prekey_private_nonce;
     std::string opks_json;
 
+    // #Assignment Operator Overload (call by const reference, returns by reference)
+    // Copies data from UserModel to this UserModelORM instance
+    // Uses this pointer to refer to the current object
     UserModelORM& operator=(const UserModel& user);
 };
 

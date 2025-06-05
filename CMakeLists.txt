@@ -10,6 +10,15 @@ endif()
 
 project(CPlusPlusClient)
 
+# Set Windows subsystem for Qt applications
+if(WIN32)
+    if(MSVC)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+    else()
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
+    endif()
+endif()
+
 # Allow local configuration overrides
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/local_config.cmake")
     include("${CMAKE_CURRENT_SOURCE_DIR}/local_config.cmake")
