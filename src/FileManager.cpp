@@ -6,12 +6,12 @@
 
 FileManager::FileManager(const File& data) : data_(data) {}
 
-void FileManager::encrypt(const std::vector<uint8_t>& file_content, const std::string& mime_type) {
+void FileManager::encrypt(const std::vector<uint8_t>& plain_text, const std::string& mime_type) {
     // Generate a random k_file
     std::vector<uint8_t> k_file = KeyGeneration::generate_symmetric_key();
     
     // Encrypt the file with k_file
-    auto [file_nonce, enc_file] = encryptWithKey(file_content, k_file);
+    auto [file_nonce, enc_file] = encryptWithKey(plain_text, k_file);
     
 
     std::vector<uint8_t> kek = UserManager::get_decrypted_kek();
