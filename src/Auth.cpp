@@ -144,7 +144,8 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     // Encrypt KEK with masterKey and uuid as associated data
     std::string kek_nonce_b64, kek_ciphertext_b64;
     try {
-        auto [nonce, kek_enc] = CryptoUtils::encrypt_with_key(kek, masterKey, std::vector<uint8_t>(uuid.begin(), uuid.end()));
+        std::vector<uint8_t> nonce;
+        auto kek_enc = CryptoUtils::encrypt_with_key(kek, masterKey, nonce, std::vector<uint8_t>(uuid.begin(), uuid.end()));
         kek_nonce_b64 = CryptoUtils::base64_encode(nonce);
         kek_ciphertext_b64 = CryptoUtils::base64_encode(kek_enc);
     } catch (...) {
