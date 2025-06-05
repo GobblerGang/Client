@@ -15,7 +15,7 @@
 class RemoteUserManager:DataManager {
 public:
     RemoteUserManager();
-    virtual ~RemoteUserManager() override = default;
+    virtual ~RemoteUserManager() override;
 protected:
     // Setters use reference args to avoid slicing
     // and set the pointers to the remote user, keys, and KEK data

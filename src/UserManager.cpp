@@ -21,6 +21,10 @@ UserManager::UserManager() {
     user_data = UserModel();
 }
 
+UserManager::~UserManager() {
+    MasterKey::instance().clear();
+}
+
 KEKModel UserManager::get_local_kek(int user_id) const {
     auto kek_models = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == user_id));
     if (kek_models.empty()) {
