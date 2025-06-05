@@ -72,6 +72,7 @@ nlohmann::json UserManager::save() {
 
 void UserManager::load(const std::string& identifier) {
     // Implement get logic here
+    // Use setUser(UserModel) from db or from server
 }
 
 void UserManager::login(const std::string& username, const std::string& password) {
@@ -79,10 +80,8 @@ void UserManager::login(const std::string& username, const std::string& password
 }
 
 bool UserManager::signup(const std::string &username, const std::string &email, const std::string &password) {
-    // Implement signup logic here
-    // This should call the save method to save the user data, after validating the input
-    user_data.username = username;
-    user_data.email = email;
+    //Function overloading
+    setUser(username, email);
     //generate and set master key from password
     std::vector<uint8_t> salt_bytes = CryptoUtils::generate_nonce(16);
     user_data.salt = CryptoUtils::base64_encode(salt_bytes);
@@ -124,6 +123,14 @@ void UserManager::changePassword(const std::string& username, const std::string&
 }
 void UserManager::handle_saving_remote_user_data() {
 
+}
+
+void UserManager::setUser(const UserModel& user) {
+    user_data = user;
+}
+void UserManager::setUser(const std::string& username, const std::string& email) {
+    user_data.username = username;
+    user_data.email = email;
 }
 
 std::vector<uint8_t> UserManager::get_decrypted_kek() const {
