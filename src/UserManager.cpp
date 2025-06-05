@@ -99,9 +99,12 @@ bool UserManager::login(const std::string& username, const std::string& password
     if (users.empty()) {
         auto server_user = Server::instance().get_user_by_name(username);
         if (server_user.uuid.empty()) {
-            throw std::runtime_error("User found on server, but not in local database. Please import your key bundle.");
+            // Not found anywhere
+            throw std::runtime_error("User not found locally or on server.");
         }
-        throw std::runtime_error("User not found");
+
+        // Found only on server
+        throw std::runtime_error("User not found locally, but exists on server. Please import your key bundle.");
     }
     UserModel user = users.front();
 
@@ -109,33 +112,41 @@ bool UserManager::login(const std::string& username, const std::string& password
     if (password.empty()) {
         throw std::runtime_error("Password is required");
     }
+    // 2. Use load() to set user_data by UUID
+    load(users.front().uuid);
 
     // 3. Get user's vault (assuming vault == user for now)
     std::string salt_b64 = user.salt;
     std::vector<uint8_t> salt = CryptoUtils::base64_decode(salt_b64);
 
-    // 4. Derive master key
+
+    std::vector<uint8_t> salt = CryptoUtils::base64_decode(user_data.salt);
     std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt);
     MasterKey::instance().set_key(master_key);
 
-    KEKModel Remote_kek_info = Server::instance().get_kek_info(user.uuid);
-    std::string server_updated_at = Remote_kek_info.updated_at;
+    KEKModel remote_kek_info = Server::instance().get_kek_info(user_data.uuid);
+    std::string server_updated_at = remote_kek_info.updated_at;
 
-    // 6. Check KEK freshness
-    if (!check_kek_freshness()) {
-        // If not fresh, try to decrypt KEK and update local if possible
-        auto [kek, aad] = KekService::decrypt_kek(Remote_kek_info, master_key, user.uuid);
-        // If decryption fails, an exception will be thrown and handled by the caller
+    KEKModel local_kek_info = get_local_kek(user_data.id);
 
-        // Update local KEK if server_updated_at differs
-        auto local_kek = get_local_kek(user.id);
-        if (local_kek.updated_at != server_updated_at) {
-            local_kek.enc_kek_cyphertext = Remote_kek_info.enc_kek_cyphertext;
-            local_kek.nonce = Remote_kek_info.nonce;
-            local_kek.updated_at = server_updated_at;
-            db().update(local_kek);
-        }
+    try {
+        check_kek_freshness();
+        auto [kek, aad] = KekService::decrypt_kek(local_kek_info, master_key, user_data.uuid);
         return true;
+    } catch (const std::exception&) {
+        try {
+            auto [kek, aad] = KekService::decrypt_kek(remote_kek_info, master_key, user_data.uuid);
+
+            if (local_kek_info.updated_at != server_updated_at) {
+                local_kek_info.enc_kek_cyphertext = remote_kek_info.enc_kek_cyphertext;
+                local_kek_info.nonce = remote_kek_info.nonce;
+                local_kek_info.updated_at = server_updated_at;
+                db().update(local_kek_info);
+            }
+            return true;
+        } catch (...) {
+            throw std::runtime_error("password changed or data has been tampered");
+        }
     }
 }
 
@@ -178,65 +189,8 @@ bool UserManager::signup(const std::string &username, const std::string &email, 
     return true; // Return true if signup is successful
 }
 
-void UserManager::changePassword(const std::string& user_uuid, const std::string& old_password, const std::string &new_password) {
+void UserManager::changePassword(const std::string& username, const std::string& password) {
     // Implement change password logic here
-    // 1. Check if the old password is correct
-    load(user_uuid);
-    if (user_data.username.empty()) {
-        throw std::runtime_error("User not found with UUID: " + user_uuid);
-    }
-    check_kek_freshness();
-    setKEK(std::make_shared<const KEKModel>(get_local_kek(user_data.id)));
-    const std::vector<uint8_t> old_salt_bytes = CryptoUtils::base64_decode(user_data.salt);
-    const std::vector<uint8_t> old_master_key = MasterKey::instance().derive_key(old_password,old_salt_bytes);
-
-    const std::vector<uint8_t> kek = get_decrypted_kek(old_master_key);
-    if (kek.empty()) {
-        throw std::runtime_error("Failed to decrypt KEK with old password.");
-    }
-    // 2. Generate new Master key
-    const std::vector<uint8_t> new_salt_bytes = CryptoUtils::generate_nonce(16);
-    const std::vector<uint8_t> new_master_key = MasterKey::instance().derive_key(new_password, new_salt_bytes);
-
-    // 3. Encrypt KEK with new Master key
-    KEKModel new_kek_model = KekService::encrypt_kek(
-        kek,
-        new_master_key,
-        user_data.uuid,
-        user_data.id // Use the current user ID
-    );
-    new_kek_model.id = getKEK().id; // Preserve the existing KEK ID
-    setKEK(std::make_shared<const KEKModel>(new_kek_model));
-    // 4. Update user data
-    user_data.salt = CryptoUtils::base64_encode(new_salt_bytes);
-
-    // 5. Get Ed25519 IK private for signing request header
-    auto ed25519_private_key_bytes = CryptoUtils::decrypt_with_key(
-        CryptoUtils::base64_decode(user_data.ed25519_identity_key_private_enc),
-        CryptoUtils::base64_decode(user_data.ed25519_identity_key_private_nonce),
-        new_master_key,
-        VaultManager::get_ed25519_identity_associated_data()
-    );
-    if (ed25519_private_key_bytes.empty()) {
-        throw std::runtime_error("Failed to decrypt Ed25519 identity key with new password.");
-    }
-    Ed25519PrivateKey ed25519_private_key(ed25519_private_key_bytes);
-    nlohmann::json server_response = Server::instance().update_kek_info(
-        new_kek_model.enc_kek_cyphertext,
-        new_kek_model.nonce,
-        new_kek_model.updated_at,
-        user_data.uuid,
-        ed25519_private_key
-    );
-    // write the new KEK to the database
-    if (server_response.empty()) {
-        throw std::runtime_error("Failed to update KEK info on server.");
-    }
-    // Update the KEK in the database
-    if (new_kek_model.id <= 0) {
-        throw std::runtime_error("Invalid KEK ID.");
-    }
-    db().update(new_kek_model);
 }
 void UserManager::handle_saving_remote_user_data() {
 
