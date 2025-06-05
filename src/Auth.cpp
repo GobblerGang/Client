@@ -1,6 +1,9 @@
 #include "Auth.h"
 
 #include <iostream>
+#include <chrono>
+#include <unordered_map>
+#include <mutex>
 
 #include "database/db_instance.h"
 #include <random>
@@ -17,12 +20,24 @@
 #include "../include/utils/cryptography/keys/X25519Key.h"
 #include "utils/Config.h"
 
-// Add a configurable server URL
+// Rate limiting for failed login attempts
 namespace {
+    struct LoginAttempt {
+        int attempts;
+        std::chrono::system_clock::time_point last_attempt;
+    };
+    std::unordered_map<std::string, LoginAttempt> login_attempts;
+    std::mutex login_mutex;
+    const int MAX_ATTEMPTS = 5;
+    const int LOCKOUT_DURATION_SECONDS = 300; // 5 minutes
+
     const std::string DEFAULT_SERVER_URL = "https://gobblergang.gobbler.info";
-    const std::string url = Config::get_instance().server_url();
-    std::string server_url = DEFAULT_SERVER_URL;
+    std::string server_url = Config::get_instance().server_url();
+    if (server_url.empty()) {
+        server_url = DEFAULT_SERVER_URL;
+    }
 }
+
 // Helper to get current ISO8601 time
 std::string current_iso8601_time() {
     std::time_t now = std::time(nullptr);
@@ -206,6 +221,169 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     // delete spk_pub;
     //
     return { true, "Registration successful! Please login." };
+}
+
+// --- LOGIN ---
+Auth::LoginResult Auth::login(const std::string& username, const std::string& password) {
+    // Check rate limiting
+    {
+        std::lock_guard<std::mutex> lock(login_mutex);
+        auto now = std::chrono::system_clock::now();
+        auto& attempt = login_attempts[username];
+        
+        if (attempt.attempts >= MAX_ATTEMPTS) {
+            auto time_since_last = std::chrono::duration_cast<std::chrono::seconds>(
+                now - attempt.last_attempt).count();
+            if (time_since_last < LOCKOUT_DURATION_SECONDS) {
+                return { false, "Too many failed attempts. Please try again later.", "" };
+            }
+            // Reset attempts if lockout period has passed
+            attempt.attempts = 0;
+        }
+        attempt.last_attempt = now;
+    }
+
+    // Validate password complexity
+    if (password.length() < 8) {
+        return { false, "Password must be at least 8 characters long", "" };
+    }
+
+    // Check if user exists in local database
+    auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username));
+    if (users.empty()) {
+        // Check if user exists on server
+        CURL* curl = curl_easy_init();
+        if (!curl) {
+            return { false, "Unable to connect to server", "" };
+        }
+
+        std::string response;
+        std::string encoded_username = curl_easy_escape(curl, username.c_str(), username.length());
+        std::string url = server_url + "/api/users/" + encoded_username;
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
+            auto* str = static_cast<std::string*>(userdata);
+            str->append(ptr, size * nmemb);
+            return size * nmemb;
+        });
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        CURLcode res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        if (res == CURLE_OK) {
+            try {
+                auto json = nlohmann::json::parse(response);
+                if (!json.contains("error")) {
+                    return { false, "Please import your key bundle to continue", "" };
+                }
+            } catch (...) {
+                // JSON parsing failed, continue with generic message
+            }
+        }
+        return { false, "Invalid username or password", "" };
+    }
+
+    if (password.empty()) {
+        return { false, "Password is required", "" };
+    }
+
+    const auto& user = users[0];
+    std::vector<uint8_t> salt = CryptoUtils::base64_decode(user.salt);
+    std::vector<uint8_t> master_key = KeyGeneration::derive_master_key(password, salt);
+
+    // Get KEK info from server
+    auto kek_info_opt = getKekInfo(user.uuid);
+    if (!kek_info_opt) {
+        return { false, "Unable to connect to server", "" };
+    }
+
+    try {
+        auto kek_info = nlohmann::json::parse(kek_info_opt.value());
+        std::string server_updated_at = kek_info["updated_at"].get<std::string>();
+
+        // Check KEK freshness
+        if (!verifyKekFreshness(user.uuid, server_updated_at)) {
+            return { false, "Please use your new password", "" };
+        }
+
+        // Try to decrypt KEK
+        std::vector<uint8_t> enc_kek = CryptoUtils::base64_decode(kek_info["enc_kek_cyphertext"].get<std::string>());
+        std::vector<uint8_t> kek_nonce = CryptoUtils::base64_decode(kek_info["nonce"].get<std::string>());
+        std::vector<uint8_t> aad(user.uuid.begin(), user.uuid.end());
+
+        try {
+            auto kek = CryptoUtils::decrypt_with_key(kek_nonce, enc_kek, master_key, aad);
+            if (kek.empty()) {
+                // Increment failed attempts
+                std::lock_guard<std::mutex> lock(login_mutex);
+                login_attempts[username].attempts++;
+                return { false, "Invalid username or password", "" };
+            }
+        } catch (...) {
+            // Increment failed attempts
+            std::lock_guard<std::mutex> lock(login_mutex);
+            login_attempts[username].attempts++;
+            return { false, "Invalid username or password", "" };
+        }
+
+        // Update local KEK if server's updated_at is newer
+        auto local_kek = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == user.id));
+        if (!local_kek.empty() && local_kek[0].updated_at != server_updated_at) {
+            local_kek[0].enc_kek_cyphertext = kek_info["enc_kek_cyphertext"].get<std::string>();
+            local_kek[0].nonce = kek_info["nonce"].get<std::string>();
+            local_kek[0].updated_at = server_updated_at;
+            db().update(local_kek[0]);
+        }
+
+        // Reset failed attempts on successful login
+        std::lock_guard<std::mutex> lock(login_mutex);
+        login_attempts.erase(username);
+
+        return { true, "Login successful!", user.uuid };
+    } catch (...) {
+        return { false, "Unable to process server response", "" };
+    }
+}
+
+std::optional<std::string> Auth::getKekInfo(const std::string& user_uuid) {
+    CURL* curl = curl_easy_init();
+    if (!curl) return std::nullopt;
+
+    std::string response;
+    std::string url = server_url + "/api/users/" + user_uuid + "/kek";
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
+        auto* str = static_cast<std::string*>(userdata);
+        str->append(ptr, size * nmemb);
+        return size * nmemb;
+    });
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    if (res != CURLE_OK) return std::nullopt;
+
+    try {
+        auto json = nlohmann::json::parse(response);
+        if (json.contains("error")) {
+            return std::nullopt;
+        }
+        return response;
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+bool Auth::verifyKekFreshness(const std::string& user_uuid, const std::string& server_updated_at) {
+    auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::uuid) == user_uuid));
+    if (users.empty()) return false;
+
+    auto local_kek = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == users[0].id));
+    if (local_kek.empty()) return false;
+
+    return local_kek[0].updated_at == server_updated_at;
 }
 
 // --- HELPERS ---
