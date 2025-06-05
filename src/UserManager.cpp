@@ -85,8 +85,52 @@ void UserManager::load(const std::string& identifier) {
     // Use setUser(UserModel) from db or from server
 }
 
-void UserManager::login(const std::string& username, const std::string& password) {
-    // Implement login logic here
+// In UserManager.cpp
+
+bool UserManager::login(const std::string& username, const std::string& password) {
+    // 1. Lookup user locally
+    auto users = db().get_all<UserModel>(where(c(&UserModel::username) == username));
+    if (users.empty()) {
+        auto server_user = Server::instance().get_user_by_name(username);
+        if (server_user.uuid.empty()) {
+            throw std::runtime_error("User found on server, but not in local database. Please import your key bundle.");
+        }
+        throw std::runtime_error("User not found");
+    }
+    UserModel user = users.front();
+
+    // 2. Check for empty password
+    if (password.empty()) {
+        throw std::runtime_error("Password is required");
+    }
+
+    // 3. Get user's vault (assuming vault == user for now)
+    std::string salt_b64 = user.salt;
+    std::vector<uint8_t> salt = CryptoUtils::base64_decode(salt_b64);
+
+    // 4. Derive master key
+    std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt);
+    MasterKey::instance().set_key(master_key);
+
+    KEKModel Remote_kek_info = Server::instance().get_kek_info(user.uuid);
+    std::string server_updated_at = Remote_kek_info.updated_at;
+
+    // 6. Check KEK freshness
+    if (!check_kek_freshness()) {
+        // If not fresh, try to decrypt KEK and update local if possible
+        auto [kek, aad] = KekService::decrypt_kek(Remote_kek_info, master_key, user.uuid);
+        // If decryption fails, an exception will be thrown and handled by the caller
+
+        // Update local KEK if server_updated_at differs
+        auto local_kek = get_local_kek(user.id);
+        if (local_kek.updated_at != server_updated_at) {
+            local_kek.enc_kek_cyphertext = Remote_kek_info.enc_kek_cyphertext;
+            local_kek.nonce = Remote_kek_info.nonce;
+            local_kek.updated_at = server_updated_at;
+            db().update(local_kek);
+        }
+        return true;
+    }
 }
 
 bool UserManager::signup(const std::string &username, const std::string &email, const std::string &password) {
