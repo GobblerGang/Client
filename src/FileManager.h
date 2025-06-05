@@ -6,7 +6,6 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
-#include <optional>
 #include "utils/cryptography/CryptoUtils.h"
 
 
@@ -36,7 +35,6 @@ protected:
 
 private:
     File data_;
-
 };
 
 #endif // FILE_H
