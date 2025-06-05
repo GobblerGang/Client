@@ -1,6 +1,7 @@
 //
 // Created by Ruairi on 04/06/2025.
 //
+#include <iostream>
 #include <Server.h>
 
 Server& Server::instance() {
@@ -80,7 +81,7 @@ HttpResponse Server::perform_request(const std::string &url, const std::vector<s
 
     response_obj.status_code = static_cast<int>(http_code);
     response_obj.body = response;
-    response_obj.success = (res == CURLE_OK && http_code == 200);
+    response_obj.success = (res == CURLE_OK && http_code>= 200 && http_code < 300);
     response_obj.curl_code = res;
     if (curl_headers) {
         curl_slist_free_all(curl_headers);
@@ -149,6 +150,7 @@ std::string Server::get_new_user_uuid() {
     }
 }
 void Server::create_user(const nlohmann::json &user_data) {
+    // std::cout << "Json to send: " << user_data.dump(4) << std::endl;
     std::string payload = user_data.dump();
     const HttpResponse resp = post_request(server_url_ + "/api/register", nlohmann::json::parse(payload));
     if (!resp.success) {

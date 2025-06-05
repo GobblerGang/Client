@@ -8,6 +8,8 @@
 #include <vector>
 #include <string>
 #include "keys/Ed25519Key.h"
+#include "keys/IdentityKeyPairs.h"
+#include "keys/SignedPreKey.h"
 
 
 using json = nlohmann::json;
@@ -97,40 +99,35 @@ bool VaultManager::verify_decrypted_keys(
            derived_spk_pub == spk_public.to_bytes();
 }
 
-std::map<std::string, std::string> VaultManager::generate_user_vault(
-    const Ed25519PrivateKey& ed25519_identity_private,
-    const Ed25519PublicKey& ed25519_identity_public,
-    const X25519PrivateKey& x25519_identity_private,
-    const X25519PublicKey& x25519_identity_public,
-    const X25519PrivateKey& spk_private,
-    const X25519PublicKey& spk_public,
-    const std::vector<uint8_t>& spk_signature,
-    const std::vector<uint8_t>& salt,
-    const std::vector<uint8_t>& master_key,
-    const std::vector<OPKPair>& opks) {
+void VaultManager::generate_user_vault(
+    const std::vector<uint8_t> &kek,
+    const std::vector<OPKPair> &opks,
+    UserModel &user,
+    const IdentityKeyPairs &identity_key_pairs,
+    const SignedPreKey &spk) {
 
     // Encrypt Ed25519 identity key
     std::vector<uint8_t> ed25519_ik_nonce;
-    auto ed25519_ik_enc = CryptoUtils::encrypt_with_key(
-        ed25519_identity_private.to_bytes(), master_key, ed25519_ik_nonce, ed25519_identity_associated_data);
+    const auto ed25519_ik_enc = CryptoUtils::encrypt_with_key(
+        identity_key_pairs.ed25519_private->to_bytes(), kek, ed25519_ik_nonce, ed25519_identity_associated_data);
     
     // Encrypt X25519 identity key
     std::vector<uint8_t> x25519_ik_nonce;
-    auto x25519_ik_enc = CryptoUtils::encrypt_with_key(
-        x25519_identity_private.to_bytes(), master_key, x25519_ik_nonce, x25519_identity_associated_data);
+    const auto x25519_ik_enc = CryptoUtils::encrypt_with_key(
+        identity_key_pairs.x25519_private->to_bytes(), kek, x25519_ik_nonce, x25519_identity_associated_data);
     
     // Encrypt signed prekey
     std::vector<uint8_t> spk_nonce;
-    auto spk_enc = CryptoUtils::encrypt_with_key(
-        spk_private.to_bytes(), master_key, spk_nonce, spk_associated_data);
+    const auto spk_enc = CryptoUtils::encrypt_with_key(
+        spk.private_key->to_bytes(), kek, spk_nonce, spk_associated_data);
 
     // Encrypt one-time prekeys
     json opks_json_list = json::array();
-    for (const auto& opk : opks) {
-        std::string opk_pub_base64 = CryptoUtils::base64_encode(opk.public_key.to_bytes());
+    for (const auto&[private_key, public_key] : opks) {
+        std::string opk_pub_base64 = CryptoUtils::base64_encode(public_key.to_bytes());
         std::vector<uint8_t> opk_nonce;
         auto opk_enc = CryptoUtils::encrypt_with_key(
-            opk.private_key.to_bytes(), master_key, opk_nonce, opk_associated_data);
+            private_key.to_bytes(), kek, opk_nonce, opk_associated_data);
 
         opks_json_list.push_back({
             {"public", opk_pub_base64},
@@ -139,28 +136,17 @@ std::map<std::string, std::string> VaultManager::generate_user_vault(
         });
     }
 
-    return {
-        {"salt", CryptoUtils::base64_encode(salt)},
-        
-        // Ed25519 identity key fields
-        {"ed25519_identity_key_public", CryptoUtils::base64_encode(ed25519_identity_public.to_bytes())},
-        {"ed25519_identity_key_private_enc", CryptoUtils::base64_encode(ed25519_ik_enc)},
-        {"ed25519_identity_key_private_nonce", CryptoUtils::base64_encode(ed25519_ik_nonce)},
-        
-        // X25519 identity key fields
-        {"x25519_identity_key_public", CryptoUtils::base64_encode(x25519_identity_public.to_bytes())},
-        {"x25519_identity_key_private_enc", CryptoUtils::base64_encode(x25519_ik_enc)},
-        {"x25519_identity_key_private_nonce", CryptoUtils::base64_encode(x25519_ik_nonce)},
-        
-        // Signed prekey fields
-        {"signed_prekey_public", CryptoUtils::base64_encode(spk_public.to_bytes())},
-        {"signed_prekey_signature", CryptoUtils::base64_encode(spk_signature)},
-        {"signed_prekey_private_enc", CryptoUtils::base64_encode(spk_enc)},
-        {"signed_prekey_private_nonce", CryptoUtils::base64_encode(spk_nonce)},
-        
-        // One-time prekeys
-        {"opks", opks_json_list.dump()},
-    };
+    user.ed25519_identity_key_private_enc = CryptoUtils::base64_encode(ed25519_ik_enc);
+    user.ed25519_identity_key_private_nonce = CryptoUtils::base64_encode(ed25519_ik_nonce);
+    user.ed25519_identity_key_public = CryptoUtils::base64_encode(identity_key_pairs.ed25519_public->to_bytes());
+    user.x25519_identity_key_private_enc = CryptoUtils::base64_encode(x25519_ik_enc);
+    user.x25519_identity_key_private_nonce = CryptoUtils::base64_encode(x25519_ik_nonce);
+    user.x25519_identity_key_public = CryptoUtils::base64_encode(identity_key_pairs.x25519_public->to_bytes());
+    user.signed_prekey_private_enc = CryptoUtils::base64_encode(spk_enc);
+    user.signed_prekey_private_nonce = CryptoUtils::base64_encode(spk_nonce);
+    user.signed_prekey_public = CryptoUtils::base64_encode(spk.public_key->to_bytes());
+    user.signed_prekey_signature = CryptoUtils::base64_encode(spk.signature);
+    user.opks_json = opks_json_list.dump(-1, ' ', false, json::error_handler_t::replace);
 }
 
 std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>
