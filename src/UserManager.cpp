@@ -126,7 +126,6 @@ bool UserManager::login(const std::string& username, const std::string& password
     std::string server_updated_at = remote_kek_info.updated_at;
 
     KEKModel local_kek_info = get_local_kek(user_data.id);
-
     try {
         check_kek_freshness();
         auto [kek, aad] = KekService::decrypt_kek(local_kek_info, master_key, user_data.uuid);
