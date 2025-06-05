@@ -29,7 +29,6 @@ nlohmann::json UserManager::save() {
     }
 
     user_data.uuid = server_response["user"]["uuid"].get<std::string>();
-    // TODO save user & kek to db
 
     nlohmann::json response_json;
     response_json["user"] = {
@@ -100,7 +99,6 @@ bool UserManager::signup(const std::string &username, const std::string &email, 
     );
     setKEK(std::make_shared<const KEKModel>(kek_data));
 
-    //TODO generate and encrypt user keys with kek
     const IdentityKeyPairs identity_keys = KeyGeneration::generate_identity_keypair();
     const SignedPreKey signed_prekey = KeyGeneration::generate_signed_prekey(identity_keys.ed25519_private->to_evp_pkey());
     std::vector<OPKPair> opks;
@@ -117,7 +115,6 @@ bool UserManager::signup(const std::string &username, const std::string &email, 
         throw std::runtime_error("Failed to save user data remotely.");
     }
     user_data.uuid = server_response["user"]["uuid"].get<std::string>();
-    // TODO save user & kek to db
     return true; // Return true if signup is successful
 }
 
@@ -128,12 +125,6 @@ void UserManager::handle_saving_remote_user_data() {
 
 }
 
-std::vector<uint8_t> get_decrypted_kek() {
-    // MasterKey& master_key = MasterKey::instance();
-    // str:: string user_uuid = user_data.uuid;
-    return std::vector<uint8_t>();
-};
-
 void UserManager::setUser(const UserModel& user) {
     user_data = user;
 }
@@ -141,3 +132,16 @@ void UserManager::setUser(const std::string& username, const std::string& email)
     user_data.username = username;
     user_data.email = email;
 }
+
+std::vector<uint8_t> UserManager::get_decrypted_kek() const {
+    // Get the current KEK model and user UUID
+    auto user_id = user_data.id;
+    auto kek_model = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == user_id)).front();
+    const std::vector<uint8_t>& master_key = MasterKey::instance().get();
+
+    // Decrypt the KEK using KekService
+    const std::string& user_uuid = user_data.uuid;
+    auto [decrypted_kek, _aad] = KekService::decrypt_kek(kek_model, master_key, user_uuid);
+
+    return decrypted_kek;
+};
