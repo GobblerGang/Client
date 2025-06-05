@@ -139,6 +139,7 @@ set(HEADERS
         src/RequestHeaders.h
         include/utils/cryptography/keys/SignedPreKey.h
         src/models/UserModelORM.cpp
+        UI.h
 
 )
 

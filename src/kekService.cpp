@@ -25,7 +25,6 @@ KEKModel KekService::encrypt_kek(const std::vector<uint8_t>& kek,
 
     return kek_model;
 }
-
 std::pair<std::vector<uint8_t>, std::vector<uint8_t>> KekService::decrypt_kek(
     const KEKModel& kek_model,
     const std::vector<uint8_t>& master_key,
@@ -42,8 +41,8 @@ std::pair<std::vector<uint8_t>, std::vector<uint8_t>> KekService::decrypt_kek(
 
 
 std::vector<uint8_t> KekService::format_aad(const std::string& user_uuid, const std::string& timestamp) {
-    const nlohmann::json aad_json = {{"user_uuid", user_uuid}, {"timestamp", timestamp}};
-    std::string aad_str = aad_json.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+    nlohmann::ordered_json aad_json = {{"user_uuid", user_uuid}, {"timestamp", timestamp}};
+    std::string aad_str = aad_json.dump(); // Default dump() is compact, no spaces
     return {aad_str.begin(), aad_str.end()};
 }
 
