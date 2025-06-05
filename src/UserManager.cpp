@@ -103,51 +103,49 @@ void UserManager::load(const std::string& identifier) {
 // In UserManager.cpp
 
 bool UserManager::login(const std::string& username, const std::string& password) {
-    // 1. Lookup user locally
     auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username));
     if (users.empty()) {
         auto server_user = Server::instance().get_user_by_name(username);
         if (server_user.uuid.empty()) {
-            // Not found anywhere
             throw std::runtime_error("User not found locally or on server.");
         }
-
-        // Found only on server
         throw std::runtime_error("User not found locally, but exists on server. Please import your key bundle.");
     }
     const auto user = users.front();
 
-    // 2. Check for empty password
     if (password.empty()) {
         throw std::runtime_error("Password is required");
     }
-    // 2. Use load() to set user_data by UUID
-    load(user.uuid);
-    std::cout << user_data.id << " " << user.id << std::endl;
-    // 3. Get user's vault (assuming vault == user for now)
+
+    UserModel temp_user;
+    temp_user = UserModel(user);
+
     std::string salt_b64 = user.salt;
     std::vector<uint8_t> salt = CryptoUtils::base64_decode(salt_b64);
     std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt);
-    MasterKey::instance().set_key(master_key);
 
-    KEKModel remote_kek_info = Server::instance().get_kek_info(user_data.uuid);
+    KEKModel remote_kek_info = Server::instance().get_kek_info(temp_user.uuid);
     std::string server_updated_at = remote_kek_info.updated_at;
+    KEKModel local_kek_info = get_local_kek(temp_user.id);
 
-    KEKModel local_kek_info = get_local_kek(user_data.id);
     try {
         check_kek_freshness();
-        auto [kek, aad] = KekService::decrypt_kek(local_kek_info, master_key, user_data.uuid);
+        auto [kek, aad] = KekService::decrypt_kek(local_kek_info, master_key, temp_user.uuid);
+        // Only now assign to user_data
+        user_data = temp_user;
+        MasterKey::instance().set_key(master_key);
         return true;
     } catch (const std::exception&) {
         try {
-            auto [kek, aad] = KekService::decrypt_kek(remote_kek_info, master_key, user_data.uuid);
-
+            auto [kek, aad] = KekService::decrypt_kek(remote_kek_info, master_key, temp_user.uuid);
             if (local_kek_info.updated_at != server_updated_at) {
                 local_kek_info.enc_kek_cyphertext = remote_kek_info.enc_kek_cyphertext;
                 local_kek_info.nonce = remote_kek_info.nonce;
                 local_kek_info.updated_at = server_updated_at;
                 db().update(local_kek_info);
             }
+            user_data = temp_user;
+            MasterKey::instance().set_key(master_key);
             return true;
         } catch (...) {
             throw std::runtime_error("password changed or data has been tampered");
@@ -308,45 +306,45 @@ nlohmann::json UserManager::export_keys() {
 }
 
 void UserManager::import_keys(const nlohmann::json& keys, const std::string &password, const std::string &username) {
-    // Load user data from keys
-     if (! db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username)).empty()) {
-         throw std::runtime_error("User already exists locally with username: " + username);
-     }
+    if (!db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username)).empty()) {
+        throw std::runtime_error("User already exists locally with username: " + username);
+    }
 
     auto user = Server::instance().get_user_by_name(username);
-    user_data = user;
-    std::cout << user.uuid << std::endl;
+    UserModel temp_user = user;
+
     std::vector<uint8_t> salt_bytes = CryptoUtils::base64_decode(user.salt);
     if (salt_bytes.empty()) {
         throw std::runtime_error("Invalid salt in user data.");
     }
     std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt_bytes);
-    setKEK(std::make_shared<KEKModel>(Server::instance().get_kek_info(user_data.uuid)));
-    auto [kek, _aad] = KekService::decrypt_kek(getKEK(), master_key, user_data.uuid);
+    KEKModel kek_info = Server::instance().get_kek_info(temp_user.uuid);
+    auto [kek, _aad] = KekService::decrypt_kek(kek_info, master_key, temp_user.uuid);
     if (kek.empty()) {
         throw std::runtime_error("Failed to decrypt KEK with provided password.");
     }
 
-    user_data.ed25519_identity_key_public = keys["ed25519_identity_key_public"];
-    user_data.ed25519_identity_key_private_enc = keys["ed25519_identity_key_private_enc"];
-    user_data.ed25519_identity_key_private_nonce = keys["ed25519_identity_key_private_nonce"];
-    user_data.x25519_identity_key_public = keys["x25519_identity_key_public"];
-    user_data.x25519_identity_key_private_enc= keys["x25519_identity_key_private_enc"];
-    user_data.x25519_identity_key_private_nonce = keys["x25519_identity_key_private_nonce"];
-    user_data.signed_prekey_public = keys["signed_prekey_public"];
-    user_data.signed_prekey_signature = keys["signed_prekey_signature"];
-    user_data.signed_prekey_private_enc = keys["signed_prekey_private_enc"];
-    user_data.signed_prekey_private_nonce = keys["signed_prekey_private_nonce"];
-    // user_data.opks = keys["opks"].dump();
+    temp_user.ed25519_identity_key_public = keys["ed25519_identity_key_public"];
+    temp_user.ed25519_identity_key_private_enc = keys["ed25519_identity_key_private_enc"];
+    temp_user.ed25519_identity_key_private_nonce = keys["ed25519_identity_key_private_nonce"];
+    temp_user.x25519_identity_key_public = keys["x25519_identity_key_public"];
+    temp_user.x25519_identity_key_private_enc = keys["x25519_identity_key_private_enc"];
+    temp_user.x25519_identity_key_private_nonce = keys["x25519_identity_key_private_nonce"];
+    temp_user.signed_prekey_public = keys["signed_prekey_public"];
+    temp_user.signed_prekey_signature = keys["signed_prekey_signature"];
+    temp_user.signed_prekey_private_enc = keys["signed_prekey_private_enc"];
+    temp_user.signed_prekey_private_nonce = keys["signed_prekey_private_nonce"];
+    // temp_user.opks = keys["opks"].dump();
+
+    user_data = temp_user;
+
     UserModelORM user_orm;
     user_orm = user_data;
-    KEKModel kek_model = getKEK();
-    int user_id = db().insert(user_orm);
-    kek_model.user_id = user_id;
-    if (!user_id) {
+    kek_info.user_id = db().insert(user_orm);
+    if (!kek_info.user_id) {
         throw std::runtime_error("Failed to save user data to database.");
     }
-    if (!db().insert(kek_model)) {
+    if (!db().insert(kek_info)) {
         throw std::runtime_error("Failed to save KEK data to database.");
     }
 }
