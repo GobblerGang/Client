@@ -3,27 +3,23 @@
 #include <QFileDialog>
 #include <QInputDialog>
 
+#include "FileManager.h"
 #include "Server.h"
 #include "UI.cpp"
 #include "UserManager.h"
 #include "database/db_instance.h"
 #include "src/Auth.h"
 #include "src/models/UserModel.h"
-
-#ifdef _WIN32
-#include <windows.h>
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    int argc = 0;
-    char **argv = nullptr;
-}
-#else
-#endif
+#include <QMimeDatabase>
+#include <QFileInfo>
+#include <QFile>
 int main(int argc, char *argv[]){
     // #Reference to Singleton
     Server& server = Server::instance();
 
     // #Raw Pointer to UserManager
     UserManager* userManager = new UserManager();
+    FileManager* fileManager = new FileManager(*userManager);
     QApplication app(argc, argv);
     const MainWindowUI ui;
     QString currentUser;
@@ -135,7 +131,6 @@ int main(int argc, char *argv[]){
                 ui.signupStatusLabel->setText("Username already exists. Please choose another.");
                 return;
             }
-            // Auth::SignUpResult result = Auth::signup(username.toStdString(), email.toStdString(), password.toStdString());
             bool result = userManager->signup(username.toStdString(), email.toStdString(), password.toStdString());
             if (!result) {
                 ui.signupStatusLabel->setText(QString::fromStdString("Signup failed. Please try again."));
@@ -153,8 +148,38 @@ int main(int argc, char *argv[]){
 
     // Upload
     QObject::connect(ui.uploadButton, &QPushButton::clicked, [&]() {
-        QString fileName = QFileDialog::getOpenFileName(ui.window, "Select File to Upload");
-        // File upload logic
+        QString filePath = QFileDialog::getOpenFileName(ui.window, "Select File to Upload");
+        if (filePath.isEmpty()) {
+            return; // User cancelled selection
+        }
+
+        try {
+            // Read the file
+            QFile file(filePath);
+            if (!file.open(QIODevice::ReadOnly)) {
+                QMessageBox::critical(ui.window, "Error", "Could not open file for reading.");
+                return;
+            }
+
+            // Get file info
+            QFileInfo fileInfo(file);
+            QString fileName = fileInfo.fileName();
+            QString mimeType = QMimeDatabase().mimeTypeForFile(fileInfo).name();
+            QByteArray fileData = file.readAll();
+            file.close();
+
+            // Convert QByteArray to vector<uint8_t>
+            std::vector<uint8_t> fileBytes(fileData.begin(), fileData.end());
+
+            // Call uploadFile with the file data
+            fileManager->uploadFile(fileBytes, mimeType.toStdString(), fileName.toStdString());
+
+            QMessageBox::information(ui.window, "Success", "File uploaded successfully!");
+
+        } catch (const std::exception& e) {
+            QMessageBox::critical(ui.window, "Error",
+                QString("Failed to upload file: %1").arg(e.what()));
+        }
     });
 
     // Share

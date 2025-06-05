@@ -83,6 +83,7 @@ set(SOURCES
 
         include/utils/cryptography/CryptoUtils.cpp
         include/utils/cryptography/3xDH.cpp
+
         include/utils/cryptography/VaultManager.cpp
         include/utils/cryptography/keyGeneration.cpp
 
@@ -92,7 +93,7 @@ set(SOURCES
 
         include/utils/dataclasses/PAC.cpp
         include/utils/dataclasses/Vault.cpp
-
+        src/fileManager.cpp
         src/UserManager.cpp
         src/UserManager.h
         src/Server.cpp

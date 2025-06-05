@@ -88,7 +88,7 @@ public:
                                                          const std::string& user_uuid,
                                                          const Ed25519PrivateKey& private_key);
 
-    std::pair<nlohmann::json, std::string> Server::revoke_file_access(
+    std::pair<nlohmann::json, std::string> revoke_file_access(
         const std::string &file_uuid,
         const std::string &file_ciphertext,
         const std::string &file_nonce,
