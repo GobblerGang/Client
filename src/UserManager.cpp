@@ -50,17 +50,18 @@ void UserManager::signup(const std::string& username, const std::string& email, 
     const std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt_bytes);
     MasterKey::instance().set_key(master_key);
     user_data.uuid = Server::instance().get_new_user_uuid();
-    //TODO generate and encrpyt KEK with master key
+    //generate and encrpyt KEK with master key
     KEKModel kek_data = KekService::encrypt_kek(
         KeyGeneration::generate_symmetric_key(),
         master_key,
         user_data.uuid,
         -1 // Placeholder for user ID, should be set after saving user data
     );
+    setKEK(std::make_shared<const KEKModel>(kek_data));
 
+    //TODO generate and encrypt user keys with kek
+    auto identity_keys = KeyGeneration::generate_identity_keypair();
 
-
-    //TODO generate and encrypt user keys with master key
 }
 
 void UserManager::changePassword(const std::string& username, const std::string& password) {

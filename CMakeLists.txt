@@ -125,6 +125,7 @@ set(HEADERS
         include/utils/Config.h
         include/utils/cryptography/3xDH.h
         include/utils/cryptography/keys/OPKPair.h
+        include/utils/cryptography/keys/IdentityKeyPairs.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})
