@@ -14,13 +14,13 @@ public:
     UserManager();
     bool login(const std::string& username, const std::string& password);
     bool signup(const std::string &username, const std::string &email, const std::string &password);
-    void changePassword(const std::string& username, const std::string& password);
+    void changePassword(const std::string& user_uuid, const std::string& old_password, const std::string &new_password);
     bool checkKek();
     void handle_saving_remote_user_data();
 
     void setUser(const UserModel& user);
     void setUser(const std::string& username, const std::string& email);
-    std::vector<uint8_t> get_decrypted_kek() const;
+    std::vector<uint8_t> get_decrypted_kek(const std::vector<uint8_t> &master_key) const;
 
     void check_kek_freshness();
 protected:

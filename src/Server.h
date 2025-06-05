@@ -45,11 +45,11 @@ public:
 
     KEKModel get_kek_info(const std::string& user_uuid);
 
-    std::pair<nlohmann::json, std::string> update_kek_info(const std::string& encrypted_kek,
-                                                           const std::string& kek_nonce,
-                                                           const std::string& updated_at,
-                                                           const std::string& user_uuid,
-                                                           const Ed25519PrivateKey& ik_priv);
+    nlohmann::json update_kek_info(const std::string &encrypted_kek,
+                                   const std::string &kek_nonce,
+                                   const std::string &updated_at,
+                                   const std::string &user_uuid,
+                                   const Ed25519PrivateKey &ik_priv);
 
     UserModel get_user_by_name(const std::string& username);
 
@@ -127,6 +127,8 @@ private:
      */
     HttpResponse put_request(const std::string& url, const nlohmann::json& payload, const std::vector<std::string>& headers = {});
 
+    nlohmann::json parse_and_check_response(const HttpResponse &resp, const std::string &context);
+
     // // Helper function to parse server response
     // std::optional<nlohmann::json> parse_server_response(const nlohmann::json response_body, int status_code);
 
@@ -136,7 +138,8 @@ private:
 
     std::string sign_payload(const std::vector<uint8_t>& payload, const std::string& nonce, const Ed25519PrivateKey& private_key);
 
-    RequestHeaders set_headers(const Ed25519PrivateKey& private_key, const std::string& user_uuid, const nlohmann::json& payload);
+    std::vector<std::string> set_headers(const Ed25519PrivateKey &private_key, const std::string &user_uuid,
+                                         const nlohmann::json &payload);
 
     /**
      * @brief Performs a request to the specified URL with the given payload.

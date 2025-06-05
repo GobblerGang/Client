@@ -108,6 +108,24 @@ HttpResponse Server::put_request(const std::string &url, const nlohmann::json &p
     return perform_request(url, headers, &payload_str, false, true);
 }
 
+nlohmann::json Server::parse_and_check_response(const HttpResponse& resp, const std::string& context) {
+    if (!resp.success) {
+        nlohmann::json json_body = nlohmann::json::parse(resp.body, nullptr, false);
+        if (json_body.contains("error")) {
+            throw std::runtime_error("Error in " + context + ": " + json_body["error"].get<std::string>());
+        }
+        throw std::runtime_error("Failed in " + context + ": " + resp.body);
+    }
+    if (resp.body.empty()) {
+        throw std::runtime_error("Received empty response in " + context);
+    }
+    try {
+        return nlohmann::json::parse(resp.body);
+    } catch (const nlohmann::json::exception& e) {
+        throw std::runtime_error("Failed to parse JSON in " + context + ": " + std::string(e.what()));
+    }
+}
+
 bool Server::get_index() {
     HttpResponse resp = get_request(server_url_ + "/");
     return resp.success;
@@ -162,25 +180,62 @@ KEKModel Server::get_kek_info(const std::string& user_uuid) {
     }
 }
 
+nlohmann::json Server::update_kek_info(const std::string &encrypted_kek,
+                                       const std::string &kek_nonce, const std::string &updated_at,
+                                       const std::string &user_uuid,
+                                       const Ed25519PrivateKey &ik_priv) {
+    nlohmann::json payload = {
+        {"enc_kek_cyphertext", encrypted_kek},
+        {"nonce", kek_nonce},
+        {"updated_at", updated_at},
+    };
+    std::vector<std::string> headers = set_headers(ik_priv, user_uuid, payload);
+
+    HttpResponse resp = put_request(server_url_ + "/api/kek?user_uuid=" + user_uuid, payload, headers);
+    return parse_and_check_response(resp, "update_kek_info");
+}
+
+std::pair<nlohmann::json, std::string> Server::get_user_by_name(const std::string &username) {
+}
+
+std::pair<nlohmann::json, std::string> Server::upload_file(const std::string &file_ciphertext,
+    const std::string &file_name, const std::string &owner_uuid, const std::string &mime_type,
+    const std::string &file_nonce, const std::string &enc_file_k, const std::string &k_file_nonce,
+    const Ed25519PrivateKey &private_key) {
+}
+
+std::pair<nlohmann::json, std::string> Server::get_user_keys(const std::string &sender_user_uuid,
+    const std::string &recipient_uuid, const Ed25519PrivateKey &private_key) {
+}
+
+std::pair<nlohmann::json, std::string> Server::send_pac(const PAC &pac, const std::string &sender_uuid,
+    const Ed25519PrivateKey &private_key) {
+}
+
+std::pair<nlohmann::json, std::string> Server::download_file(const std::string &file_uuid,
+    const Ed25519PrivateKey &private_key, const std::string &user_uuid) {
+}
+
+std::pair<nlohmann::json, std::string> Server::get_owned_files(const std::string &user_id,
+    const Ed25519PrivateKey &private_key) {
+}
+
+nlohmann::json Server::get_user_pacs(const std::string &user_id, const Ed25519PrivateKey &private_key) {
+}
+
+std::pair<nlohmann::json, std::string> Server::get_file_info(const std::string &file_uuid, const std::string &user_uuid,
+    const Ed25519PrivateKey &private_key) {
+}
+
 std::string Server::get_new_user_uuid() {
     HttpResponse resp = get_request(server_url_ + "/api/generate-uuid");
-    if (!resp.success) {
-        throw std::runtime_error("Failed to get new user UUID: " + resp.body);
+    nlohmann::json json_response = parse_and_check_response(resp, "get_new_user_uuid");
+    if (json_response.contains("uuid")) {
+        return json_response["uuid"].get<std::string>();
     }
-    if (resp.body.empty()) {
-        throw std::runtime_error("Received empty response for new user UUID");
-    }
-    try {
-        nlohmann::json json_response = nlohmann::json::parse(resp.body);
-        if (json_response.contains("uuid")) {
-            return json_response["uuid"].get<std::string>();
-        } else {
-            throw std::runtime_error("UUID not found in response");
-        }
-    } catch (const nlohmann::json::exception& e) {
-        throw std::runtime_error("Failed to parse UUID response: " + std::string(e.what()));
-    }
+    throw std::runtime_error("UUID not found in response");
 }
+
 void Server::create_user(const nlohmann::json &user_data) {
     // std::cout << "Json to send: " << user_data.dump(4) << std::endl;
     std::string payload = user_data.dump();
@@ -239,23 +294,26 @@ std::string Server::sign_payload(
     return CryptoUtils::base64_encode(signature);
 }
 
-RequestHeaders Server::set_headers(
-    const Ed25519PrivateKey& private_key,
-    const std::string& user_uuid,
-    const nlohmann::json& payload
+std::vector<std::string> Server::set_headers(
+    const Ed25519PrivateKey &private_key,
+    const std::string &user_uuid,
+    const nlohmann::json &payload
 ) {
-    // 1. Serialize the payload to bytes
     std::string payload_str = payload.dump();
     std::vector<uint8_t> payload_bytes(payload_str.begin(), payload_str.end());
 
     std::string nonce = get_server_nonce(user_uuid);
-
     if (nonce.empty()) {
         throw std::runtime_error("Failed to retrieve nonce from server.");
     }
 
     std::string signature = sign_payload(payload_bytes, nonce, private_key);
-    RequestHeaders request_headers = {user_uuid, nonce, signature};
-    return request_headers;
+
+    std::vector<std::string> headers = {
+        "X-User-UUID: " + user_uuid,
+        "X-Nonce: " + nonce,
+        "X-Signature: " + signature
+    };
+    return headers;
 }
 
