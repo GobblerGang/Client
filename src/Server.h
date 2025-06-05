@@ -22,7 +22,7 @@ struct HttpResponse {
  */
 class Server {
 public:
-    // Singleton instance access
+    // #Singleton Instance Accessor
     static Server& instance();
 
     Server(const Server&) = delete;
@@ -42,6 +42,7 @@ public:
      */
     std::string get_new_user_uuid();
 
+    // #Function Declaration (call by const reference, returns by value)
     KEKModel get_kek_info(const std::string& user_uuid);
 
     nlohmann::json update_kek_info(const std::string &encrypted_kek,
@@ -50,8 +51,10 @@ public:
                                    const std::string &user_uuid,
                                    const Ed25519PrivateKey &ik_priv);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::pair<nlohmann::json, std::string> get_user_by_name(const std::string& username);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::pair<nlohmann::json, std::string> upload_file(const std::string& file_ciphertext,
                                                        const std::string& file_name,
                                                        const std::string& owner_uuid,
@@ -61,28 +64,34 @@ public:
                                                        const std::string& k_file_nonce,
                                                        const Ed25519PrivateKey& private_key);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::pair<nlohmann::json, std::string> get_user_keys(const std::string& sender_user_uuid,
                                                          const std::string& recipient_uuid,
                                                          const Ed25519PrivateKey& private_key);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::pair<nlohmann::json, std::string> send_pac(const PAC& pac,
                                                     const std::string& sender_uuid,
                                                     const Ed25519PrivateKey& private_key);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::pair<nlohmann::json, std::string> download_file(const std::string& file_uuid,
                                                          const Ed25519PrivateKey& private_key,
                                                          const std::string& user_uuid);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::pair<nlohmann::json, std::string> get_owned_files(const std::string& user_id,
                                                            const Ed25519PrivateKey& private_key);
 
     nlohmann::json get_user_pacs(const std::string& user_id,
                                  const Ed25519PrivateKey& private_key);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::pair<nlohmann::json, std::string> get_file_info(const std::string& file_uuid,
                                                          const std::string& user_uuid,
                                                          const Ed25519PrivateKey& private_key);
 
+    // #Function Declaration (returns bool)
     bool get_index();
     // Get the server URL
     std::string server_url() const { return server_url_; }
@@ -100,32 +109,16 @@ private:
     // Helper function to clean up CURL
     void cleanup_curl();
 
-    /**
-     * @brief Performs a POST request to the specified URL with the given payload.
-     * @param url The URL to send the POST request to.
-     * @param payload The JSON payload to send in the request body.
-     * @param headers Optional headers to include in the request.
-     * @return An HttpResponse object containing the response data.
-     */
+    // #Function Declaration (call by const reference, returns by value)
     HttpResponse post_request(const std::string& url, const nlohmann::json& payload, const std::vector<std::string>& headers = {});
 
-    /**
-     * @brief Performs a GET request to the specified URL.
-     * @param url The URL to send the GET request to.
-     * @param headers Optional headers to include in the request.
-     * @return An HttpResponse object containing the response data.
-     */
+    // #Function Declaration (call by const reference, returns by value, default argument)
     HttpResponse get_request(const std::string& url, const std::vector<std::string>& headers = {});
 
-    /**
-     * @brief Performs a PUT request to the specified URL with the given payload.
-     * @param url The URL to send the PUT request to.
-     * @param payload The JSON payload to send in the request body.
-     * @param headers Optional headers to include in the request.
-     * @return An HttpResponse object containing the response data.
-     */
+    // #Function Declaration (call by const reference, returns by value, default argument)
     HttpResponse put_request(const std::string& url, const nlohmann::json& payload, const std::vector<std::string>& headers = {});
 
+    // #Function Declaration (call by const reference, returns by value)
     nlohmann::json parse_and_check_response(const HttpResponse &resp, const std::string &context);
 
     // // Helper function to parse server response
@@ -133,22 +126,17 @@ private:
 
     // Functions for setting/signing headers
 
+    // #Function Declaration (call by const reference, returns by value)
     std::string get_server_nonce(const std::string &user_uuid);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::string sign_payload(const std::vector<uint8_t>& payload, const std::string& nonce, const Ed25519PrivateKey& private_key);
 
+    // #Function Declaration (call by const reference, returns by value)
     std::vector<std::string> set_headers(const Ed25519PrivateKey &private_key, const std::string &user_uuid,
                                          const nlohmann::json &payload);
 
-    /**
-     * @brief Performs a request to the specified URL with the given payload.
-     * @param url The URL to send the request to.
-     * @param headers Optional headers to include in the request.
-     * @param payload The JSON payload to send in the request body.
-     * @param is_post Boolean indicating if the request is a POST request.
-     * @param is_put Boolean indicating if the request is a PUT request.
-     * @return An HttpResponse object containing the response data.
-     */
+    // #Function Declaration (call by const reference, returns by value, default argument)
     HttpResponse perform_request(const std::string& url, const std::vector<std::string>& headers, const std::string* payload, bool is_post, bool is_put = false);
 
 };

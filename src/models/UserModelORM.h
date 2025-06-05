@@ -26,6 +26,7 @@ struct UserModelORM {
     std::string signed_prekey_private_nonce;
     std::string opks_json;
 
+    // #Assignment Operator Overload (call by const reference, returns by reference)
     UserModelORM& operator=(const UserModel& user);
 };
 

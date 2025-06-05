@@ -14,8 +14,11 @@ class VaultManager;
 class CryptoUtils {
     friend class VaultManager;
 public:
+    // #Function Declaration
     static std::vector<uint8_t> generate_nonce(const std::size_t size);
+
     /**
+     * #Call by Reference (const reference)
      * Encrypts the given plaintext using the provided key and nonce.
      *
      * @param plaintext the plaintext to encrypt, must be a multiple of 16 bytes.
@@ -25,26 +28,35 @@ public:
      * @return Encrypted ciphertext as a vector of bytes.
      */
     static std::vector<uint8_t>
-    encrypt_with_key(const std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& key, std::vector<uint8_t>& nonce, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
+    encrypt_with_key(const std::vector<uint8_t>& plaintext, 
+                    const std::vector<uint8_t>& key, 
+                    std::vector<uint8_t>& nonce, 
+                    const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
 
+    // #Function with Default Arguments
     static std::vector<uint8_t>
-    decrypt_with_key(const std::vector<uint8_t>& nonce, const std::vector<uint8_t>& ciphertext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
+    decrypt_with_key(const std::vector<uint8_t>& nonce, 
+                    const std::vector<uint8_t>& ciphertext, 
+                    const std::vector<uint8_t>& key, 
+                    const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
 
-
+    // #Function with Multiple Parameters
     static PAC create_pac(
-    const std::string &file_id,
-    const std::string &recipient_id,
-    const std::string &issuer_id,
-    const std::vector<uint8_t> &encrypted_file_key,
-    const std::vector<uint8_t> &encrypted_file_key_nonce,
-    const std::vector<uint8_t> &sender_ephemeral_pubkey,
-    int64_t valid_until,
-    EVP_PKEY* identity_key,  // Ed25519 private key
-    const std::optional<std::string> &filename,
-    const std::optional<std::string> &mime_type
+        const std::string &file_id,
+        const std::string &recipient_id,
+        const std::string &issuer_id,
+        const std::vector<uint8_t> &encrypted_file_key,
+        const std::vector<uint8_t> &encrypted_file_key_nonce,
+        const std::vector<uint8_t> &sender_ephemeral_pubkey,
+        int64_t valid_until,
+        EVP_PKEY* identity_key,  // Ed25519 private key
+        const std::optional<std::string> &filename,
+        const std::optional<std::string> &mime_type
     );
 
-    static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key); // Ed25519
+    // #Function with Pointer Parameter
+    static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key);
+
     /**
      *
      * @param spk_public - The public key of the signed prekey.

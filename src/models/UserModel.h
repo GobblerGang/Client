@@ -31,7 +31,7 @@ struct UserModel: RemoteUser, PublicKeys {
     // One-time prekeys as JSON
     std::string opks_json;
 
-    // In UserModel.h, inside struct UserModel
+    // #Assignment Operator Overload (call by const reference, returns by reference)
     UserModel& operator=(const UserModelORM& orm) {
         id = orm.id;
         uuid = orm.uuid;
@@ -51,10 +51,11 @@ struct UserModel: RemoteUser, PublicKeys {
         opks_json = orm.opks_json;
         return *this;
     }
-    // Explicit makes it so the compiler cant automatically convert UserModelORM to UserModel (stops unwanted conversions)
+    // #Explicit Constructor (call by const reference)
     explicit UserModel(const UserModelORM& orm) {
         *this = orm; // Uses the assignment operator
     }
+    // #Default Constructor
     UserModel() = default; // Default constructor
 };
 #endif //USERMODEL_H
