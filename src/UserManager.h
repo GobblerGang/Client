@@ -12,8 +12,7 @@
 class UserManager: RemoteUserManager {
 public:
     UserManager();
-    void login(const std::string& username, const std::string& password);
-
+    bool login(const std::string& username, const std::string& password);
     bool signup(const std::string &username, const std::string &email, const std::string &password);
     void changePassword(const std::string& username, const std::string& password);
     bool checkKek();

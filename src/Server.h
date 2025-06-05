@@ -5,6 +5,7 @@
 #include <curl/curl.h>
 #include "RequestHeaders.h"
 #include "models/KEKModel.h"
+#include "models/UserModel.h"
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
@@ -50,7 +51,7 @@ public:
                                                            const std::string& user_uuid,
                                                            const Ed25519PrivateKey& ik_priv);
 
-    std::pair<nlohmann::json, std::string> get_user_by_name(const std::string& username);
+    UserModel get_user_by_name(const std::string& username);
 
     std::pair<nlohmann::json, std::string> upload_file(const std::string& file_ciphertext,
                                                        const std::string& file_name,
