@@ -13,11 +13,21 @@
 #include "utils/cryptography/KeyGeneration.h"
 #include "utils/cryptography/VaultManager.h"
 #include "utils/cryptography/keys/SignedPreKey.h"
+#include <optional>
+#include <string>
+#include <utility>
 
 UserManager::UserManager() {
     user_data = UserModel();
 }
 
+KEKModel UserManager::get_local_kek(int user_id) const {
+    auto kek_models = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == user_id));
+    if (kek_models.empty()) {
+        throw std::runtime_error("No KEK found for user_id: " + std::to_string(user_id));
+    }
+    return kek_models.front();
+}
 nlohmann::json UserManager::save() {
     setRemoteUser(std::make_shared<const UserModel>(user_data));
     setKeys(std::make_shared<const UserModel>(user_data));
@@ -135,8 +145,7 @@ void UserManager::setUser(const std::string& username, const std::string& email)
 
 std::vector<uint8_t> UserManager::get_decrypted_kek() const {
     // Get the current KEK model and user UUID
-    // auto user_id = user_data.id;
-    auto kek_model = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == this->user_data.id)).front();
+    KEKModel kek_model = get_local_kek(user_data.id);
     const std::vector<uint8_t>& master_key = MasterKey::instance().get();
 
     // Decrypt the KEK using KekService
@@ -145,3 +154,20 @@ std::vector<uint8_t> UserManager::get_decrypted_kek() const {
 
     return decrypted_kek;
 };
+
+
+bool UserManager::check_kek_freshness() {
+    // Fetch KEK info from server
+    KEKModel server_kek_info = Server::instance().get_kek_info(user_data.uuid);
+
+    std::string server_updated_at = server_kek_info.updated_at;
+    KEKModel local_Kek_Model = get_local_kek(user_data.id);
+    std::string local_updated_at = local_Kek_Model.updated_at;
+
+    if (!server_updated_at.empty() && local_updated_at != server_updated_at) {
+        throw std::runtime_error(
+            "Your password was changed on another device. Please use the new password. Server updated at: " + server_updated_at);
+    }
+
+    return true;
+}

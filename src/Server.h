@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <curl/curl.h>
 #include "RequestHeaders.h"
+#include "models/KEKModel.h"
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
@@ -41,7 +42,7 @@ public:
      */
     std::string get_new_user_uuid();
 
-    std::pair<nlohmann::json, std::string> get_kek_info(const std::string& user_uuid);
+    KEKModel get_kek_info(const std::string& user_uuid);
 
     std::pair<nlohmann::json, std::string> update_kek_info(const std::string& encrypted_kek,
                                                            const std::string& kek_nonce,
