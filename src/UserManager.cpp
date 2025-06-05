@@ -198,9 +198,6 @@ void UserManager::changePassword(const std::string& user_uuid, const std::string
     }
     db().update(new_kek_model);
 }
-void UserManager::handle_saving_remote_user_data() {
-
-}
 
 void UserManager::setUser(const UserModel& user) {
     this->user_data = user;
