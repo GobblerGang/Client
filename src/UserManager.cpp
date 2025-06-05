@@ -106,7 +106,7 @@ bool UserManager::signup(const std::string &username, const std::string &email, 
     vault_manager.generate_user_vault(
         kek_bytes,
         opks,
-        user_data,
+        this->user_data,
         identity_keys,
         signed_prekey
     );
@@ -126,17 +126,17 @@ void UserManager::handle_saving_remote_user_data() {
 }
 
 void UserManager::setUser(const UserModel& user) {
-    user_data = user;
+    this->user_data = user;
 }
 void UserManager::setUser(const std::string& username, const std::string& email) {
-    user_data.username = username;
-    user_data.email = email;
+    this->user_data.username = username;
+    this->user_data.email = email;
 }
 
 std::vector<uint8_t> UserManager::get_decrypted_kek() const {
     // Get the current KEK model and user UUID
-    auto user_id = user_data.id;
-    auto kek_model = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == user_id)).front();
+    // auto user_id = user_data.id;
+    auto kek_model = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == this->user_data.id)).front();
     const std::vector<uint8_t>& master_key = MasterKey::instance().get();
 
     // Decrypt the KEK using KekService
