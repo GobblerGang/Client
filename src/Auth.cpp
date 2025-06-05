@@ -91,8 +91,22 @@ namespace {
             return size * nmemb;
         });
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
+        
+        // Add SSL verification
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+        
+        // Add verbose output for debugging
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        
         CURLcode res = curl_easy_perform(curl);
+        
+        // Get detailed error information
+        if (res != CURLE_OK) {
+            std::string error_msg = curl_easy_strerror(res);
+            std::cerr << "CURL error: " << error_msg << std::endl;
+        }
+        
         curl_slist_free_all(headers);
         curl_easy_cleanup(curl);
 
@@ -103,8 +117,8 @@ namespace {
             if (json.contains("nonce")) {
                 return json["nonce"].get<std::string>();
             }
-        } catch (...) {
-            // JSON parsing failed
+        } catch (const std::exception& e) {
+            std::cerr << "JSON parsing error: " << e.what() << std::endl;
         }
         return std::nullopt;
     }
@@ -416,6 +430,7 @@ Auth::LoginResult Auth::login(const std::string& username, const std::string& pa
         std::string response;
         std::string encoded_username = curl_easy_escape(curl, username.c_str(), username.length());
         std::string url = server_url + "/api/users/" + encoded_username;
+        
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
             auto* str = static_cast<std::string*>(userdata);
@@ -423,8 +438,22 @@ Auth::LoginResult Auth::login(const std::string& username, const std::string& pa
             return size * nmemb;
         });
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        
+        // Add SSL verification
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+        
+        // Add verbose output for debugging
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
         CURLcode res = curl_easy_perform(curl);
+        
+        // Get detailed error information
+        if (res != CURLE_OK) {
+            std::string error_msg = curl_easy_strerror(res);
+            std::cerr << "CURL error: " << error_msg << std::endl;
+        }
+        
         curl_easy_cleanup(curl);
 
         if (res == CURLE_OK) {
@@ -433,8 +462,8 @@ Auth::LoginResult Auth::login(const std::string& username, const std::string& pa
                 if (!json.contains("error")) {
                     return { false, "Please import your key bundle to continue", "" };
                 }
-            } catch (...) {
-                // JSON parsing failed, continue with generic message
+            } catch (const std::exception& e) {
+                std::cerr << "JSON parsing error: " << e.what() << std::endl;
             }
         }
         return { false, "Invalid username or password", "" };

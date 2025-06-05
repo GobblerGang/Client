@@ -1,8 +1,8 @@
 {
     "server": {
-        "host": "localhost",
-        "port": 5000,
-        "base_url": "http://localhost:5000"
+        "host": "gobblergang.gobbler.info",
+        "port": 443,
+        "base_url": "https://gobblergang.gobbler.info"
     },
     "database": {
         "path": "database.sqlite"
@@ -12,5 +12,4 @@
         "iv_size": 12,
         "tag_size": 16
     }
-
 } 

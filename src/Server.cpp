@@ -23,8 +23,6 @@ Server::~Server() {
 
 void Server::init_curl() {
     if (!curl_handle) {
-        // Initialize the CURL handle if it hasn't been done yet
-        // Handle is used to set options and perform requests
         curl_handle = curl_easy_init();
         if (!curl_handle) {
             throw std::runtime_error("Failed to initialize CURL handle");
