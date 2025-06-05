@@ -50,6 +50,8 @@ protected:
     virtual void load(const std::string& identifier) override;
 
 private:
+    // #Smart Pointer (shared_ptr)
+    // Demonstrates shared ownership of remote user data
     std::shared_ptr<const RemoteUser> user_remote_ptr = nullptr; // Pointer to remote user data
     std::shared_ptr<const PublicKeys> keys_remote_ptr = nullptr; // Pointer to public keys
     std::shared_ptr<const KEKModel> kek_data_ptr = nullptr; // Pointer to KEK data

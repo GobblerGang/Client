@@ -33,14 +33,14 @@ public:
                     std::vector<uint8_t>& nonce, 
                     const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
 
-    // #Function with Default Arguments
+    // #Function with const reference parameters
     static std::vector<uint8_t>
     decrypt_with_key(const std::vector<uint8_t>& nonce, 
                     const std::vector<uint8_t>& ciphertext, 
                     const std::vector<uint8_t>& key, 
                     const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
 
-    // #Function with Multiple Parameters
+    // #Function with const reference parameters and raw pointer
     static PAC create_pac(
         const std::string &file_id,
         const std::string &recipient_id,
@@ -48,13 +48,12 @@ public:
         const std::vector<uint8_t> &encrypted_file_key,
         const std::vector<uint8_t> &encrypted_file_key_nonce,
         const std::vector<uint8_t> &sender_ephemeral_pubkey,
-        int64_t valid_until,
-        EVP_PKEY* identity_key,  // Ed25519 private key
+        EVP_PKEY* identity_key,  // Raw pointer to OpenSSL key
         const std::optional<std::string> &filename,
         const std::optional<std::string> &mime_type
     );
 
-    // #Function with Pointer Parameter
+    // #Function with raw pointer parameter
     static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key);
 
     /**

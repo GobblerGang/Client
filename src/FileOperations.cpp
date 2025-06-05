@@ -5,11 +5,11 @@
 // #include <QMessageBox>
 // #include <QFile>
 
-// #Function Pointer Type Definition
+// #Function Pointer
 using FileOperationCallback = std::function<void(const QString&)>;
 using FileOperationValidator = std::function<bool(const QString&)>;
 
-// #Function Pointer Type
+// #Function Pointer Declaration
 using FileOperationFunc = bool (*)(const QString&);
 
 // #Call by Reference (const reference)
@@ -54,7 +54,7 @@ inline bool validateFile(const QString& path) {
     return QFile::exists(path);
 }
 
-// #Smart Pointer Usage
+// #Smart Pointer (unique_ptr)
 std::unique_ptr<QFile> createFileHandle(const QString& path) {
     return std::make_unique<QFile>(path);
 }
@@ -99,23 +99,21 @@ void processFileWithCallback(const QString& path, FileOperationCallback callback
     }
 }
 
-// #Function that demonstrates pointer arithmetic with arrays
+// #Raw Pointer Arithmetic
 void processFileArray(char* data, size_t size) {
-    char* end = data + size;
+    char* end = data + size;  // Pointer arithmetic
     while (data < end) {
-        // Process each byte
-        *data = toupper(*data);
-        ++data;
+        *data = toupper(*data);  // Pointer dereferencing
+        data++;  // Pointer increment
     }
 }
 
-// #Function that demonstrates array-pointer relationship
+// #Dynamic Memory Allocation
 void processFileChunks(const QString& path) {
+    const int chunkSize = 1024;
+    char* buffer = new char[chunkSize];  // Dynamic allocation
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) return;
-
-    const int chunkSize = 1024;
-    char* buffer = new char[chunkSize];
 
     while (!file.atEnd()) {
         qint64 bytesRead = file.read(buffer, chunkSize);
@@ -131,7 +129,7 @@ void processFileChunks(const QString& path) {
         }
     }
 
-    delete[] buffer;
+    delete[] buffer;  // Memory deallocation
     file.close();
 }
 
@@ -139,8 +137,8 @@ void processFileChunks(const QString& path) {
 // std::unique_ptr<UploadOperation> createUploadOperation(const QString& path) {
 //     return std::make_unique<UploadOperation>(path);
 // }
-//
-// // Function that demonstrates shared pointers
+
+// #Smart Pointer (shared_ptr)
 // std::shared_ptr<UploadOperation> createSharedUploadOperation(const QString& path) {
 //     return std::make_shared<UploadOperation>(path);
 // }

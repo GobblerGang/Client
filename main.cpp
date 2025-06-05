@@ -17,10 +17,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     char **argv = nullptr;
 #else
 int main(int argc, char *argv[]) {
+    // #Reference to Singleton
+    Server& server = Server::instance();
+
+    // #Raw Pointer to UserManager
+    UserManager* userManager = new UserManager();
+
+    // #Raw Pointer to QListWidgetItem
+    QListWidgetItem* selectedItem = ui.fileList->currentItem();
 #endif
     QApplication app(argc, argv);
 
-    Server& server = Server::instance(); // Initialize server instance
     bool ok = server.get_index();
     if (!ok) {
         QMessageBox::critical(nullptr, "Server Error", "Failed to connect to the server. Please check your network connection or server status.");
@@ -137,7 +144,6 @@ int main(int argc, char *argv[]) {
                 return;
             }
             // Auth::SignUpResult result = Auth::signup(username.toStdString(), email.toStdString(), password.toStdString());
-            UserManager* userManager = new UserManager();
             bool result = userManager->signup(username.toStdString(), email.toStdString(), password.toStdString());
             if (!result) {
                 ui.signupStatusLabel->setText(QString::fromStdString("Signup failed. Please try again."));
