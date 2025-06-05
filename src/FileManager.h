@@ -36,20 +36,7 @@ protected:
 
 private:
     File data_;
-    
-    // Helper functions for encryption
-    std::pair<std::vector<uint8_t>, std::vector<uint8_t>> encryptWithKey(
-        const std::vector<uint8_t>& plaintext,
-        const std::vector<uint8_t>& key,
-        const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt
-    ) const;
-    
-    std::vector<uint8_t> decryptWithKey(
-        const std::vector<uint8_t>& nonce,
-        const std::vector<uint8_t>& ciphertext,
-        const std::vector<uint8_t>& key,
-        const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt
-    ) const;
+
 };
 
 #endif // FILE_H

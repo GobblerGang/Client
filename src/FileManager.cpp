@@ -11,39 +11,20 @@ void FileManager::encrypt(const std::vector<uint8_t>& plain_text, const std::str
     std::vector<uint8_t> k_file = KeyGeneration::generate_symmetric_key();
     
     // Encrypt the file with k_file
-    auto [file_nonce, enc_file] = encryptWithKey(plain_text, k_file);
+    auto [file_nonce, enc_file] = CryptoUtils::encrypt_with_key(plain_text, k_file);
     
 
     std::vector<uint8_t> kek = UserManager::get_decrypted_kek();
     
     // Encrypt k_file with KEK
-    auto [k_file_nonce, enc_k_file] = encryptWithKey(k_file, kek);
-    
+    auto [k_file_nonce, enc_k_file] = CryptoUtils::encrypt_with_key(k_file, kek);
+
     // Store all the encrypted data
     data_.file_nonce = CryptoUtils::base64_encode(file_nonce);
     data_.enc_file_ciphertext = CryptoUtils::base64_encode(enc_file);
     data_.mime_type = mime_type;
     data_.enc_file_k = CryptoUtils::base64_encode(enc_k_file);
     data_.k_file_nonce = CryptoUtils::base64_encode(k_file_nonce);
-}
-
-std::vector<uint8_t> FileManager::decrypt() const {
-    // Get the KEK from the database and decrypt it with master key
-    std::vector<uint8_t> kek = getDecryptedKEK();
-    
-    // Decrypt k_file using KEK
-    std::vector<uint8_t> k_file = decryptWithKey(
-        CryptoUtils::base64_decode(data_.k_file_nonce),
-        CryptoUtils::base64_decode(data_.enc_file_k),
-        kek
-    );
-    
-    // Decrypt the file using k_file
-    return decryptWithKey(
-        CryptoUtils::base64_decode(data_.file_nonce),
-        CryptoUtils::base64_decode(data_.enc_file_ciphertext),
-        k_file
-    );
 }
 
 nlohmann::json FileManager::prepareForUpload() const {
@@ -65,14 +46,6 @@ void FileManager::load(const std::string& identifier) {
     // TODO: Implement loading from storage
     // This will be implemented when we have the storage system ready
     // For now, this is a placeholder
-}
-
-std::pair<std::vector<uint8_t>, std::vector<uint8_t>> FileManager::encryptWithKey(
-    const std::vector<uint8_t>& plaintext,
-    const std::vector<uint8_t>& key,
-    const std::optional<std::vector<uint8_t>>& associated_data
-) const {
-    return CryptoUtils::encrypt_with_key(plaintext, key, associated_data);
 }
 
 std::vector<uint8_t> FileManager::decryptWithKey(
