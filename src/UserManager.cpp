@@ -156,19 +156,18 @@ std::vector<uint8_t> UserManager::get_decrypted_kek() const {
 };
 
 
-
-std::pair<bool, std::optional<std::string>> UserManager::check_kek_freshness() {
+bool UserManager::check_kek_freshness() {
     // Fetch KEK info from server
-    KEKModel server_kek_info;
-    // Replace with your actual server call
-    server_kek_info = Server::instance().get_kek_info(user_data.uuid);
+    KEKModel server_kek_info = Server::instance().get_kek_info(user_data.uuid);
 
     std::string server_updated_at = server_kek_info.updated_at;
     KEKModel local_Kek_Model = get_local_kek(user_data.id);
     std::string local_updated_at = local_Kek_Model.updated_at;
+
     if (!server_updated_at.empty() && local_updated_at != server_updated_at) {
-        return {false, std::make_optional<std::string>(
-            "Your password was changed on another device. Please use the new password. Server updated at: " + server_updated_at)};
+        throw std::runtime_error(
+            "Your password was changed on another device. Please use the new password. Server updated at: " + server_updated_at);
     }
-    return {true, std::nullopt};
+
+    return true;
 }
