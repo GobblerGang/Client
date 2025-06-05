@@ -4,7 +4,7 @@
 #include "UserModelORM.h"
 #include "UserModel.h"
 
-inline UserModelORM& UserModelORM::operator=(const UserModel &user) {
+UserModelORM& UserModelORM::operator=(const UserModel &user) {
     uuid = user.uuid;
     username = user.username;
     email = user.email;
