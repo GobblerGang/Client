@@ -9,6 +9,8 @@
 #include "utils/cryptography/CryptoUtils.h"
 
 
+// Derived class from DataManager for file management
+// Demonstrates inheritance and virtual function overriding
 class FileManager : public DataManager {
 public:
     // #Default Constructor
@@ -17,7 +19,7 @@ public:
     // #Constructor (call by const reference)
     // Creates a new FileManager instance with the specified File data
     explicit FileManager(const File& data);
-    // #Destructor
+    // #Virtual Destructor Override
     // Ensures proper cleanup of FileManager resources
     ~FileManager() override = default;
 
@@ -45,11 +47,12 @@ public:
     nlohmann::json prepareForUpload() const;
 
 protected:
-    // Implement virtual functions from DataManager
-    // #Function Declaration (returns by value)
+    // #Virtual Function Override (returns by value)
+    // Implements the pure virtual function from DataManager
     // Saves the current state of the file manager to a JSON object
     nlohmann::json save() override;
-    // #Function Declaration (call by const reference)
+    // #Virtual Function Override (call by const reference)
+    // Implements the pure virtual function from DataManager
     // Loads file data from the specified identifier
     void load(const std::string& identifier) override;
 

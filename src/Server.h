@@ -44,25 +44,12 @@ public:
     // Prevents move assignment of the singleton instance
     Server& operator=(Server&&) = delete;
 
-    /**
-     * @brief Creates a new user on the server. POSTs to url/api/users
-     * @param user_data A JSON object containing user data (username, email, password).
-     * @throws std::runtime_error if the server request fails or returns an error.
-     */
+    // #Function Overloading
+    // Multiple functions with the same name but different parameters
+    // Demonstrates compile-time polymorphism
     void create_user(const nlohmann::json& user_data);
-
-    /**
-     * @brief Generates a new UUID for the user. GETs url/api/generate-uuid
-     * @return A string containing the new UUID.
-     * @throws std::runtime_error if the server request fails or returns an error.
-     */
     std::string get_new_user_uuid();
-
-    // #Function Declaration (call by const reference, returns by value)
-    // Retrieves KEK information for the specified user
     KEKModel get_kek_info(const std::string& user_uuid);
-
-    // Updates KEK information for the specified user
     nlohmann::json update_kek_info(const std::string &encrypted_kek,
                                    const std::string &kek_nonce,
                                    const std::string &updated_at,

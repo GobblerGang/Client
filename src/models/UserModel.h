@@ -30,21 +30,20 @@ struct UserModel: RemoteUser, PublicKeys {
     // One-time prekeys as JSON
     std::string opks_json;
 
-    // #Assignment Operator Overload (call by const reference, returns by reference)
-    // Copies data from UserModelORM to this UserModel instance
-    // Uses this pointer to refer to the current object
+    // #Operator Overloading
+    // Overloads the assignment operator to copy data from UserModelORM
+    // Demonstrates custom behavior for operator= with user-defined types
     UserModel& operator=(const UserModelORM& orm) {
-        this->id = orm.id;
         this->uuid = orm.uuid;
         this->username = orm.username;
         this->email = orm.email;
+        this->salt = orm.salt;
         this->ed25519_identity_key_public = orm.ed25519_identity_key_public;
         this->ed25519_identity_key_private_enc = orm.ed25519_identity_key_private_enc;
         this->ed25519_identity_key_private_nonce = orm.ed25519_identity_key_private_nonce;
         this->x25519_identity_key_public = orm.x25519_identity_key_public;
         this->x25519_identity_key_private_enc = orm.x25519_identity_key_private_enc;
         this->x25519_identity_key_private_nonce = orm.x25519_identity_key_private_nonce;
-        this->salt = orm.salt;
         this->signed_prekey_public = orm.signed_prekey_public;
         this->signed_prekey_signature = orm.signed_prekey_signature;
         this->signed_prekey_private_enc = orm.signed_prekey_private_enc;

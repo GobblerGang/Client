@@ -3,7 +3,8 @@
 #include <string>
 #include <nlohmann/json.hpp>
 
-// Base class for data management
+// Abstract base class for data management
+// This class cannot be instantiated directly due to pure virtual functions
 class DataManager {
 public:
     // #Default Constructor
@@ -11,16 +12,15 @@ public:
     DataManager() = default;
 
     // #Virtual Destructor
-    // Ensures proper cleanup of derived class resources when deleting through base pointer
+    // Ensures proper cleanup of derived class resources when deleted through base pointer
     virtual ~DataManager() = default;
 
-protected:
     // #Pure Virtual Function Declaration (returns by value)
-    // Saves the current state of the data manager to a JSON object
+    // Must be implemented by derived classes to save data to JSON format
     virtual nlohmann::json save() = 0;
 
     // #Pure Virtual Function Declaration (call by const reference)
-    // Loads data from the specified identifier
+    // Must be implemented by derived classes to load data from identifier
     virtual void load(const std::string& identifier) = 0;
 };
 
