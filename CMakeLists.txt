@@ -88,6 +88,7 @@ set(SOURCES
         src/UserManager.h
         src/Server.cpp
         include/utils/Config.cpp
+        src/models/UserModelORM.cpp
 )
 
 set(HEADERS
@@ -128,6 +129,7 @@ set(HEADERS
         include/utils/cryptography/keys/IdentityKeyPairs.h
         src/RequestHeaders.h
         include/utils/cryptography/keys/SignedPreKey.h
+        src/models/UserModelORM.cpp
 
 )
 
