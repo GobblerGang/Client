@@ -77,10 +77,29 @@ bool Server::get_index() {
     return resp.success;
 }
 
-std::string Server::get_server_nonce(const std::string &user_uuid) {
-    init_curl();
-    return "";
+std::pair<std::string, std::string> Server::get_server_nonce(const std::string &user_uuid) {
+    HttpResponse resp = get_request(server_url_ + "/api/nonce?user_uuid=" + user_uuid);
+    if (!resp.success) {
+        throw std::runtime_error("Failed to get nonce: " + resp.body);
+    }
+    if (resp.body.empty()) {
+        throw std::runtime_error("Received empty response for get nonce");
+    }
+    try {
+        nlohmann::json json_response = nlohmann::json::parse(resp.body);
+        if (json_response.contains("nonce") && json_response.contains("timestamp") &&
+            json_response["nonce"].is_string() && json_response["timestamp"].is_string()) {
+            std::string nonce = json_response["nonce"];
+            std::string timestamp = json_response["timestamp"];
+            return {nonce, timestamp};
+            } else {
+                throw std::runtime_error("Nonce or timestamp not found in response");
+            }
+    } catch (const nlohmann::json::exception& e) {
+        throw std::runtime_error("Failed to parse JSON response: " + std::string(e.what()));
+    }
 }
+
 
 std::string Server::get_new_user_uuid() {
     HttpResponse resp = get_request(server_url_ + "/api/generate-uuid");
