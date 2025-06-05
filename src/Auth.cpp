@@ -39,6 +39,63 @@ namespace {
     }
     
     const std::string server_url = get_server_url();
+
+    // Master key management
+    class MasterKeyManager {
+    private:
+        std::vector<uint8_t> master_key;
+        mutable std::mutex key_mutex;  // Made mutable to allow locking in const member functions
+
+    public:
+        static MasterKeyManager& get_instance() {
+            static MasterKeyManager instance;
+            return instance;
+        }
+
+        void set_key(const std::vector<uint8_t>& key) {
+            std::lock_guard<std::mutex> lock(key_mutex);
+            master_key = key;
+        }
+
+        void clear() {
+            std::lock_guard<std::mutex> lock(key_mutex);
+            master_key.clear();
+        }
+
+        std::vector<uint8_t> get_key() const {
+            std::lock_guard<std::mutex> lock(key_mutex);
+            return master_key;
+        }
+    };
+}
+
+// Helper function to format AAD for KEK decryption
+std::vector<uint8_t> format_aad(const std::string& user_uuid, const std::string& timestamp) {
+    nlohmann::json aad_json = {
+        {"user_uuid", user_uuid},
+        {"timestamp", timestamp}
+    };
+    std::string aad_str = aad_json.dump();
+    return std::vector<uint8_t>(aad_str.begin(), aad_str.end());
+}
+
+// Helper function to try decrypting KEK
+std::pair<std::vector<uint8_t>, std::string> try_decrypt_kek(
+    const nlohmann::json& kek_info,
+    const std::string& user_uuid,
+    const std::vector<uint8_t>& master_key
+) {
+    try {
+        std::vector<uint8_t> enc_kek = CryptoUtils::base64_decode(kek_info["enc_kek_cyphertext"].get<std::string>());
+        std::vector<uint8_t> kek_nonce = CryptoUtils::base64_decode(kek_info["nonce"].get<std::string>());
+        std::string updated_at = kek_info["updated_at"].get<std::string>();
+        std::vector<uint8_t> aad = format_aad(user_uuid, updated_at);
+
+        auto kek = CryptoUtils::decrypt_with_key(kek_nonce, enc_kek, master_key, aad);
+        return {kek, ""};
+    } catch (...) {
+        return {{}, "Failed to decrypt KEK with provided password."};
+    }
 }
 
 // Helper to get current ISO8601 time
@@ -240,15 +297,9 @@ Auth::LoginResult Auth::login(const std::string& username, const std::string& pa
             if (time_since_last < LOCKOUT_DURATION_SECONDS) {
                 return { false, "Too many failed attempts. Please try again later.", "" };
             }
-            // Reset attempts if lockout period has passed
             attempt.attempts = 0;
         }
         attempt.last_attempt = now;
-    }
-
-    // Validate password complexity
-    if (password.length() < 8) {
-        return { false, "Password must be at least 8 characters long", "" };
     }
 
     // Check if user exists in local database
@@ -294,10 +345,12 @@ Auth::LoginResult Auth::login(const std::string& username, const std::string& pa
     const auto& user = users[0];
     std::vector<uint8_t> salt = CryptoUtils::base64_decode(user.salt);
     std::vector<uint8_t> master_key = KeyGeneration::derive_master_key(password, salt);
+    MasterKeyManager::get_instance().set_key(master_key);
 
     // Get KEK info from server
     auto kek_info_opt = getKekInfo(user.uuid);
     if (!kek_info_opt) {
+        MasterKeyManager::get_instance().clear();
         return { false, "Unable to connect to server", "" };
     }
 
@@ -307,26 +360,17 @@ Auth::LoginResult Auth::login(const std::string& username, const std::string& pa
 
         // Check KEK freshness
         if (!verifyKekFreshness(user.uuid, server_updated_at)) {
+            MasterKeyManager::get_instance().clear();
             return { false, "Please use your new password", "" };
         }
 
         // Try to decrypt KEK
-        std::vector<uint8_t> enc_kek = CryptoUtils::base64_decode(kek_info["enc_kek_cyphertext"].get<std::string>());
-        std::vector<uint8_t> kek_nonce = CryptoUtils::base64_decode(kek_info["nonce"].get<std::string>());
-        std::vector<uint8_t> aad(user.uuid.begin(), user.uuid.end());
-
-        try {
-            auto kek = CryptoUtils::decrypt_with_key(kek_nonce, enc_kek, master_key, aad);
-            if (kek.empty()) {
-                // Increment failed attempts
-                std::lock_guard<std::mutex> lock(login_mutex);
-                login_attempts[username].attempts++;
-                return { false, "Invalid username or password", "" };
-            }
-        } catch (...) {
+        auto [kek, kek_error] = try_decrypt_kek(kek_info, user.uuid, master_key);
+        if (!kek_error.empty()) {
             // Increment failed attempts
             std::lock_guard<std::mutex> lock(login_mutex);
             login_attempts[username].attempts++;
+            MasterKeyManager::get_instance().clear();
             return { false, "Invalid username or password", "" };
         }
 
@@ -345,6 +389,7 @@ Auth::LoginResult Auth::login(const std::string& username, const std::string& pa
 
         return { true, "Login successful!", user.uuid };
     } catch (...) {
+        MasterKeyManager::get_instance().clear();
         return { false, "Unable to process server response", "" };
     }
 }
