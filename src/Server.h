@@ -1,10 +1,9 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <optional>
 #include <nlohmann/json.hpp>
 #include <curl/curl.h>
-#include "utils/Config.h"
+#include "Headers.h"
 
 // Forward declaration
 class Ed25519PrivateKey;

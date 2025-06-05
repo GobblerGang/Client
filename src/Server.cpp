@@ -2,6 +2,9 @@
 // Created by Ruairi on 04/06/2025.
 //
 #include <Server.h>
+#include "utils/Config.h"
+#include "utils/cryptography/CryptoUtils.h"
+#include "utils/cryptography/keys/Ed25519Key.h"
 
 Server& Server::instance() {
     static Server instance;
@@ -160,5 +163,69 @@ void Server::create_user(const nlohmann::json &user_data) {
     if (resp.body.empty()) {
         throw std::runtime_error("Received empty response when creating user");
     }
+}
+
+std::string sign_payload(
+    const std::vector<uint8_t>& payload,
+    const std::string& nonce,
+    const Ed25519PrivateKey& private_key
+) {
+    // 1. Combine payload and nonce into a single message
+    std::vector<uint8_t> message(payload);
+    message.insert(message.end(), nonce.begin(), nonce.end());
+
+    // 2. Create a signing context
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(private_key.to_evp_pkey(), nullptr);
+    if (!ctx) {
+        throw std::runtime_error("Failed to create signing context");
+    }
+
+    if (EVP_PKEY_sign_init(ctx) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        throw std::runtime_error("EVP_PKEY_sign_init failed");
+    }
+
+    // 3. Get the length of the signature
+    size_t siglen = 0;
+    if (EVP_PKEY_sign(ctx, nullptr, &siglen, message.data(), message.size()) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        throw std::runtime_error("EVP_PKEY_sign (size estimation) failed");
+    }
+
+    // 4. Generate the signature
+    std::vector<uint8_t> signature(siglen);
+    if (EVP_PKEY_sign(ctx, signature.data(), &siglen, message.data(), message.size()) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        throw std::runtime_error("EVP_PKEY_sign failed");
+    }
+    signature.resize(siglen);
+    EVP_PKEY_CTX_free(ctx);
+
+    // 5. Encode signature as base64 string
+    return CryptoUtils::base64_encode(signature);
+}
+
+std::vector<std::string> Server::set_headers(
+    const Ed25519PrivateKey& private_key,
+    const std::string& user_uuid,
+    const nlohmann::json& payload
+) {
+    // 1. Serialize the payload to bytes
+    std::string payload_str = payload.dump();
+    std::vector<uint8_t> payload_bytes(payload_str.begin(), payload_str.end());
+
+    std::string nonce = get_server_nonce(user_uuid);
+
+    if (nonce.empty()) {
+        throw std::runtime_error("Failed to retrieve nonce from server.");
+    }
+
+    std::string signature = sign_payload(payload_bytes, nonce, private_key);
+
+    return {
+        "X-User-UUID: " + user_uuid,
+        "X-Nonce: " + nonce,
+        "X-Signature: " + signature
+    };
 }
 
