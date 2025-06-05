@@ -14,7 +14,7 @@ KEKModel KekService::encrypt_kek(const std::vector<uint8_t>& kek,
     std::vector<uint8_t> aad = format_aad(user_uuid, timestamp);
     // Passing nonce by
     std::vector<uint8_t> kek_nonce;
-    const auto ciphertext = CryptoUtils::encrypt_with_key(kek, master_key, aad, kek_nonce);
+    const auto ciphertext = CryptoUtils::encrypt_with_key(kek, master_key, kek_nonce, aad);
 
     KEKModel kek_model;
     kek_model.enc_kek_cyphertext = CryptoUtils::base64_encode(ciphertext);
@@ -49,7 +49,7 @@ std::vector<uint8_t> KekService::format_aad(const std::string& user_uuid, const 
 std::string KekService::get_current_iso8601_utc() {
     auto now = std::chrono::system_clock::now();
     auto now_time_t = std::chrono::system_clock::to_time_t(now);
-    auto now_us = duration_cast<std::chrono::microseconds>(now.time_since_epoch()) % 1000000;
+    auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()) % 1000000;
 
     std::tm utc_tm = *gmtime(&now_time_t);
 

@@ -20,8 +20,9 @@ std::vector<uint8_t> CryptoUtils::generate_nonce(std::size_t size) {
 std::vector<uint8_t> CryptoUtils::encrypt_with_key(
     const std::vector<uint8_t>& plaintext,
     const std::vector<uint8_t>& key,
-    const std::optional<std::vector<uint8_t>>& associated_data,
-    std::vector<uint8_t>& nonce) {
+    std::vector<uint8_t>& nonce,
+    const std::optional<std::vector<uint8_t>>& associated_data
+    ) {
     nonce = generate_nonce(12);
 
     std::vector<uint8_t> ciphertext(plaintext.size() + 16);

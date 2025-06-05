@@ -25,7 +25,7 @@ public:
      * @return Encrypted ciphertext as a vector of bytes.
      */
     static std::vector<uint8_t>
-    encrypt_with_key(const std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt, std::vector<uint8_t>& nonce);
+    encrypt_with_key(const std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& key, std::vector<uint8_t>& nonce, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
 
     static std::vector<uint8_t>
     decrypt_with_key(const std::vector<uint8_t>& nonce, const std::vector<uint8_t>& ciphertext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
