@@ -221,3 +221,26 @@ std::vector<uint8_t> CryptoUtils::base64_decode(const std::string& input) {
     BIO_free_all(bio);
     return buffer;
 }
+
+bool CryptoUtils::verify_spk(const std::vector<uint8_t> &spk_public, const std::vector<uint8_t> &spk_signature, const std::vector<uint8_t> &spk_data) {
+    if (spk_public.size() != 32 || spk_signature.size() != 64) {
+        return false;
+    }
+    EVP_PKEY* pubkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, nullptr, spk_public.data(), spk_public.size());
+    if (!pubkey) {
+        return false;
+    }
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    if (!ctx) {
+        EVP_PKEY_free(pubkey);
+        return false;
+    }
+    bool result = false;
+    if (EVP_DigestVerifyInit(ctx, nullptr, nullptr, nullptr, pubkey) == 1) {
+        int ok = EVP_DigestVerify(ctx, spk_signature.data(), spk_signature.size(), spk_data.data(), spk_data.size());
+        result = (ok == 1);
+    }
+    EVP_MD_CTX_free(ctx);
+    EVP_PKEY_free(pubkey);
+    return result;
+}

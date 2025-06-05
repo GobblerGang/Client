@@ -45,7 +45,14 @@ public:
     );
 
     static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key); // Ed25519
-
+    /**
+     *
+     * @param spk_public - The public key of the signed prekey.
+     * @param spk_signature - The signature of the signed prekey.
+     * @param spk_data - The data that was signed with the signed prekey.
+     * @return
+     */
+    static bool verify_spk(const std::vector<uint8_t>& spk_public, const std::vector<uint8_t>& spk_signature, const std::vector<uint8_t>& spk_data);
     static std::string base64_encode(const std::vector<uint8_t>& data);
     static std::vector<uint8_t> base64_decode(const std::string& input);
 };

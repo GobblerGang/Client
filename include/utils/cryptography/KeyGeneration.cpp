@@ -95,17 +95,30 @@ SignedPreKey KeyGeneration::generate_signed_prekey(
     size_t len = pub_bytes.size();
     EVP_PKEY_get_raw_public_key(pub, pub_bytes.data(), &len);
 
-    EVP_PKEY_CTX* sign_ctx = EVP_PKEY_CTX_new(identity_key, nullptr);
-    EVP_PKEY_sign_init(sign_ctx);
+    EVP_MD_CTX* sign_ctx = EVP_MD_CTX_new();
+    if (!sign_ctx) {
+        throw std::runtime_error("Failed to create EVP_MD_CTX for signing");
+    }
 
-    size_t siglen = 0;
-    EVP_PKEY_sign(sign_ctx, nullptr, &siglen, pub_bytes.data(), pub_bytes.size());
-
-    std::vector<uint8_t> signature(siglen);
-    EVP_PKEY_sign(sign_ctx, signature.data(), &siglen, pub_bytes.data(), pub_bytes.size());
+    std::vector<uint8_t> signature(64); // Ed25519 signatures are 64 bytes
+    size_t siglen = signature.size();
+    if (EVP_DigestSignInit(sign_ctx, nullptr, nullptr, nullptr, identity_key) <= 0 ||
+        EVP_DigestSign(sign_ctx, signature.data(), &siglen, pub_bytes.data(), pub_bytes.size()) <= 0) {
+        throw std::runtime_error("Failed to sign SPK with Ed25519 key");
+        }
     signature.resize(siglen);
 
-    EVP_PKEY_CTX_free(sign_ctx);
+    // EVP_PKEY_CTX* sign_ctx = EVP_PKEY_CTX_new(identity_key, nullptr);
+    // EVP_PKEY_sign_init(sign_ctx);
+    //
+    // size_t siglen = 0;
+    // EVP_PKEY_sign(sign_ctx, nullptr, &siglen, pub_bytes.data(), pub_bytes.size());
+    //
+    // std::vector<uint8_t> signature(siglen);
+    // EVP_PKEY_sign(sign_ctx, signature.data(), &siglen, pub_bytes.data(), pub_bytes.size());
+    // signature.resize(siglen);
+    //
+    // EVP_PKEY_CTX_free(sign_ctx);
 
     // Extract raw X25519 keys
     std::vector<uint8_t> x_priv_bytes(32);
