@@ -88,6 +88,18 @@ public:
                                                          const std::string& user_uuid,
                                                          const Ed25519PrivateKey& private_key);
 
+    std::pair<nlohmann::json, std::string> Server::revoke_file_access(
+        const std::string &file_uuid,
+        const std::string &file_ciphertext,
+        const std::string &file_nonce,
+        const std::string &enc_file_k,
+        const std::string &k_file_nonce,
+        const std::vector<nlohmann::json> &pacs, // List of PACs as JSON objects
+        const std::string &owner_uuid,
+        const Ed25519PrivateKey &private_key,
+        const std::string &filename,
+        const std::string &mime_type
+    );
     bool get_index();
     // Get the server URL
     std::string server_url() const { return server_url_; }
