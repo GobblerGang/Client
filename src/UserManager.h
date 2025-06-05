@@ -16,7 +16,7 @@ public:
     UserManager();
     // #Function Declaration (call by const reference)
     // Authenticates a user with the provided credentials
-    void login(const std::string& username, const std::string& password);
+    bool login(const std::string& username, const std::string& password);
     // #Function Declaration (call by const reference)
     // Creates a new user account with the provided information
     bool signup(const std::string &username, const std::string &email, const std::string &password);

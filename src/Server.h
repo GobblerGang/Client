@@ -59,7 +59,7 @@ public:
 
     // #Function Declaration (call by const reference, returns by value)
     // Retrieves user information by username
-    std::pair<nlohmann::json, std::string> get_user_by_name(const std::string& username);
+    UserModel get_user_by_name(const std::string& username);
 
     // #Function Declaration (call by const reference, returns by value)
     // Uploads a file to the server

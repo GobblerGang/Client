@@ -99,7 +99,7 @@ void UserManager::load(const std::string& identifier) {
 bool UserManager::login(const std::string& username, const std::string& password) {
     // 1. Lookup user locally
     auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username));
-
+    std::cout << username << " " << password << std::endl;
     if (users.empty()) {
         auto server_user = Server::instance().get_user_by_name(username);
         if (server_user.uuid.empty()) {
@@ -111,14 +111,15 @@ bool UserManager::login(const std::string& username, const std::string& password
         throw std::runtime_error("User not found locally, but exists on server. Please import your key bundle.");
     }
     const auto user = users.front();
+    std::cout << user.id << " " << password << std::endl;
 
     // 2. Check for empty password
     if (password.empty()) {
         throw std::runtime_error("Password is required");
     }
     // 2. Use load() to set user_data by UUID
-    load(users.front().uuid);
-
+    load(user.uuid);
+    std::cout << user_data.id << " " << user.id << std::endl;
     // 3. Get user's vault (assuming vault == user for now)
     std::string salt_b64 = user.salt;
     std::vector<uint8_t> salt = CryptoUtils::base64_decode(salt_b64);

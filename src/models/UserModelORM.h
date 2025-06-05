@@ -5,7 +5,6 @@
 #ifndef USERMODELORM_H
 #define USERMODELORM_H
 #include <string>
-#include "UserModel.h"
 struct UserModel;
 
 // Flat struct for ORM (Object-Relational Mapping)
