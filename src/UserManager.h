@@ -18,6 +18,9 @@ public:
     void changePassword(const std::string& username, const std::string& password);
     bool checkKek();
     void handle_saving_remote_user_data();
+
+    void setUser(const UserModel& user);
+    void setUser(const std::string& username, const std::string& email);
     std::vector<uint8_t> get_decrypted_kek() const;
 protected:
     void load(const std::string& identifier) override;
