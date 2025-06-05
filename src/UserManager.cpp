@@ -62,7 +62,7 @@ void UserManager::signup(const std::string& username, const std::string& email, 
     //TODO generate and encrypt user keys with kek
     auto identity_keys = KeyGeneration::generate_identity_keypair();
 
-    //TODO generate and encrpyt KEK with master key
+
     //TODO generate and encrypt user keys with master key
 }
 
