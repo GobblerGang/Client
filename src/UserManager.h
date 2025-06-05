@@ -22,11 +22,13 @@ public:
     void setUser(const UserModel& user);
     void setUser(const std::string& username, const std::string& email);
     std::vector<uint8_t> get_decrypted_kek() const;
+    std::pair<bool, std::optional<std::string>> check_kek_freshness();
 protected:
     void load(const std::string& identifier) override;
     nlohmann::json save() override;
 private:
     UserModel user_data;
+    KEKModel get_local_kek(int user_id) const;
 };
 
 
