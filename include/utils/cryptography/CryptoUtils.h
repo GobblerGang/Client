@@ -36,4 +36,7 @@ public:
     );
 
     static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key); // Ed25519
+
+    static std::string base64_encode(const std::vector<uint8_t>& data);
+    static std::vector<uint8_t> base64_decode(const std::string& input);
 };

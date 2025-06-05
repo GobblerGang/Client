@@ -4,15 +4,10 @@
 #include <openssl/kdf.h>
 #include <stdexcept>
 #include <sstream>
-#include <tuple>
 #include <nlohmann/json.hpp>
 #include <openssl/x509.h>
-#include <openssl/obj_mac.h>
 #include <iomanip>
-#include "keys/Ed25519Key.h"
-#include "VaultManager.h"
 #include "CryptoUtils.h"
-using namespace std;
 
 std::vector<uint8_t> CryptoUtils::generate_nonce(std::size_t size) {
     std::vector<uint8_t> nonce(size);
@@ -96,9 +91,9 @@ PAC CryptoUtils::create_pac(
         {"file_id", file_id},
         {"recipient_id", recipient_id},
         {"issuer_id", issuer_id},
-        {"encrypted_file_key", VaultManager::base64_encode(encrypted_file_key)},
-        {"encrypted_file_key_nonce", VaultManager::base64_encode(encrypted_file_key_nonce)},
-        {"sender_ephemeral_pubkey", VaultManager::base64_encode(sender_ephemeral_pubkey)},
+        {"encrypted_file_key", base64_encode(encrypted_file_key)},
+        {"encrypted_file_key_nonce", base64_encode(encrypted_file_key_nonce)},
+        {"sender_ephemeral_pubkey", base64_encode(sender_ephemeral_pubkey)},
         {"valid_until", valid_until},
         {"revoked", false},
         {"filename", filename.value_or("")},
@@ -155,7 +150,7 @@ PAC CryptoUtils::create_pac(
         file_id,
         valid_until_iso,
         pac_json.at("encrypted_file_key").get<std::string>(),
-        VaultManager::base64_encode(signature),
+        base64_encode(signature),
         issuer_id,
         pac_json.at("sender_ephemeral_pubkey").get<std::string>(),
         pac_json.at("encrypted_file_key_nonce").get<std::string>(),
@@ -168,7 +163,7 @@ PAC CryptoUtils::create_pac(
 bool CryptoUtils::verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key) {
     try {
         nlohmann::json copy = pac_json;
-        std::vector<uint8_t> signature = VaultManager::base64_decode(copy["signature"]);
+        std::vector<uint8_t> signature = base64_decode(copy["signature"]);
         copy.erase("signature");
 
         std::string message = copy.dump();
@@ -182,4 +177,43 @@ bool CryptoUtils::verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_pu
     } catch (...) {
         return false;
     }
+}
+
+std::string CryptoUtils::base64_encode(const std::vector<uint8_t>& data) {
+    BIO* bio, * b64;
+    BUF_MEM* bufferPtr;
+
+    b64 = BIO_new(BIO_f_base64());
+    bio = BIO_new(BIO_s_mem());
+    bio = BIO_push(b64, bio);
+
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);  // No newlines
+    BIO_write(bio, data.data(), static_cast<int>(data.size()));
+    BIO_flush(bio);
+    BIO_get_mem_ptr(bio, &bufferPtr);
+
+    std::string result(bufferPtr->data, bufferPtr->length);
+    BIO_free_all(bio);
+    return result;
+}
+
+std::vector<uint8_t> CryptoUtils::base64_decode(const std::string& input) {
+    BIO* bio, * b64;
+    int maxLen = static_cast<int>(input.length());
+    std::vector<uint8_t> buffer(maxLen);
+
+    b64 = BIO_new(BIO_f_base64());
+    bio = BIO_new_mem_buf(input.data(), maxLen);
+    bio = BIO_push(b64, bio);
+
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);  // No newlines
+    int decodedLen = BIO_read(bio, buffer.data(), maxLen);
+    if (decodedLen <= 0) {
+        BIO_free_all(bio);
+        throw std::runtime_error("Base64 decode failed.");
+    }
+
+    buffer.resize(decodedLen);
+    BIO_free_all(bio);
+    return buffer;
 }

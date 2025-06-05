@@ -2,6 +2,12 @@
 #include <openssl/evp.h>
 #include <vector>
 #include <cstring>
+#include <argon2.h>
+#include <openssl/rand.h>
+#include <openssl/kdf.h>
+#include <sstream>
+#include <nlohmann/json.hpp>
+#include <openssl/x509.h>
 
 std::vector<uint8_t> perform_3xdh_sender(
     EVP_PKEY* id_priv, EVP_PKEY* eph_priv, EVP_PKEY* r_id_pub, EVP_PKEY* r_spk_pub, EVP_PKEY* r_otk_pub

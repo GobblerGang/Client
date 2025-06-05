@@ -113,6 +113,7 @@ set(HEADERS
         src/kekService.cpp
         include/utils/Config.h
         include/utils/cryptography/3xDH.h
+        include/utils/cryptography/keys/OPKPair.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})

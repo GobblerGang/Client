@@ -122,3 +122,14 @@ std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>> KeyGener
     std::tuple signedkey= std::make_tuple(x_priv, x_pub, signature);
     return signedkey;
 }
+
+std::vector<OPKPair> KeyGeneration::keypairs_from_opk_bytes(
+    const std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>& decrypted_opks) {
+
+    std::vector<OPKPair> opk_keypairs;
+    for (const auto& [priv_bytes, pub_bytes] : decrypted_opks) {
+        OPKPair pair{X25519PrivateKey(priv_bytes), X25519PublicKey(pub_bytes)};
+        opk_keypairs.push_back(pair);
+    }
+    return opk_keypairs;
+}
