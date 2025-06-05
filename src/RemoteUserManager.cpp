@@ -4,6 +4,8 @@
 
 #include "RemoteUserManager.h"
 
+#include <iostream>
+
 #include "Server.h"
 
 RemoteUserManager::RemoteUserManager() {
@@ -18,6 +20,15 @@ nlohmann::json RemoteUserManager::save() {
         throw std::runtime_error("RemoteUserManager: User, keys, or KEK data not set.");
     }
     std::string user_uuid = Server::instance().get_new_user_uuid();
+
+    // std::cout << "RemoteUserManager: Saving user with UUID: " << user_uuid << std::endl;
+    // std::cout << "RemoteUserManager: User data: " << user_remote_ptr->username << ", " << user_remote_ptr->email << std::endl;
+    // std::cout << "RemoteUserManager: Keys data: " << keys_remote_ptr->ed25519_identity_key_public << ", "
+    //           << keys_remote_ptr->x25519_identity_key_public << std::endl;
+    // std::cout << "RemoteUserManager: SPK data: " << keys_remote_ptr->signed_prekey_public << ", "
+    //           << keys_remote_ptr->signed_prekey_signature << std::endl;
+    // std::cout << "RemoteUserManager: KEK data: " << kek_data_ptr->enc_kek_cyphertext << ", "
+    //           << kek_data_ptr->nonce << ", " << kek_data_ptr->updated_at << std::endl;
 
     nlohmann::json j;
     j["user"] = {
@@ -34,8 +45,8 @@ nlohmann::json RemoteUserManager::save() {
         {"opks", keys_remote_ptr->opks}
     };
     j["kek"] = {
-        {"encrypted_kek", kek_data_ptr->enc_kek_cyphertext},
-        {"kek_nonce", kek_data_ptr->nonce},
+        {"enc_kek_cyphertext", kek_data_ptr->enc_kek_cyphertext},
+        {"nonce", kek_data_ptr->nonce},
         {"updated_at", kek_data_ptr->updated_at}
     };
     Server& server = Server::instance();

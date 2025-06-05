@@ -8,7 +8,11 @@
 #include "Server.h"
 #include <utils/cryptography/CryptoUtils.h>
 #include "KekService.h"
+#include "database/db_instance.h"
+#include "models/UserModelORM.h"
 #include "utils/cryptography/KeyGeneration.h"
+#include "utils/cryptography/VaultManager.h"
+#include "utils/cryptography/keys/SignedPreKey.h"
 
 UserManager::UserManager() {
     user_data = UserModel();
@@ -27,7 +31,57 @@ nlohmann::json UserManager::save() {
     user_data.uuid = server_response["user"]["uuid"].get<std::string>();
     // TODO save user & kek to db
 
-    return {};
+    nlohmann::json response_json;
+    response_json["user"] = {
+        {"uuid", user_data.uuid},
+        {"username", user_data.username},
+        {"email", user_data.email},
+        {"salt", user_data.salt}
+    };
+    response_json["keys"] = {
+        {"ed25519_identity_key_public", user_data.ed25519_identity_key_public},
+        {"x25519_identity_key_public", user_data.x25519_identity_key_public},
+        {"signed_prekey_public", user_data.signed_prekey_public},
+        {"signed_prekey_signature", user_data.signed_prekey_signature},
+        {"opks", user_data.opks}
+    };
+    response_json["kek"] = {
+        {"enc_kek_cyphertext", getKEK().enc_kek_cyphertext},
+        {"nonce", getKEK().nonce},
+        {"updated_at", getKEK().updated_at}
+    };
+    UserModelORM user_orm;
+    user_orm.uuid = user_data.uuid;
+    user_orm.username = user_data.username;
+    user_orm.email = user_data.email;
+    user_orm.ed25519_identity_key_public = user_data.ed25519_identity_key_public;
+    user_orm.ed25519_identity_key_private_enc = user_data.ed25519_identity_key_private_enc;
+    user_orm.ed25519_identity_key_private_nonce = user_data.ed25519_identity_key_private_nonce;
+    user_orm.x25519_identity_key_public = user_data.x25519_identity_key_public;
+    user_orm.x25519_identity_key_private_enc = user_data.x25519_identity_key_private_enc;
+    user_orm.x25519_identity_key_private_nonce = user_data.x25519_identity_key_private_nonce;
+    user_orm.signed_prekey_public = user_data.signed_prekey_public;
+    user_orm.signed_prekey_signature = user_data.signed_prekey_signature;
+    user_orm.signed_prekey_private_enc = user_data.signed_prekey_private_enc;
+    user_orm.signed_prekey_private_nonce = user_data.signed_prekey_private_nonce;
+    user_orm.opks_json = user_data.opks_json;
+    // Save user_orm to database
+    int user_id = db().insert(user_orm);
+    if (user_id < 0) {
+        throw std::runtime_error("Failed to save user data to database.");
+    }
+    KEKModel kek_model;
+    kek_model.enc_kek_cyphertext = getKEK().enc_kek_cyphertext;
+    kek_model.nonce = getKEK().nonce;
+    kek_model.updated_at = getKEK().updated_at;
+    kek_model.user_id = user_id; // Set the user ID after saving the user
+
+    setKEK(std::make_shared<const KEKModel>(kek_model));
+    int kek_id = db().insert(kek_model);
+    if (kek_id < 0) {
+        throw std::runtime_error("Failed to save kek data to database.");
+    }
+    return response_json;
 }
 
 void UserManager::load(const std::string& identifier) {
@@ -38,17 +92,18 @@ void UserManager::login(const std::string& username, const std::string& password
     // Implement login logic here
 }
 
-void UserManager::signup(const std::string& username, const std::string& email, const std::string& password) {
+bool UserManager::signup(const std::string &username, const std::string &email, const std::string &password) {
     // Implement signup logic here
     // This should call the save method to save the user data, after validating the input
     user_data.username = username;
     user_data.email = email;
     //generate and set master key from password
     std::vector<uint8_t> salt_bytes = CryptoUtils::generate_nonce(16);
-    user_data.salt = std::string(salt_bytes.begin(), salt_bytes.end());
+    user_data.salt = CryptoUtils::base64_encode(salt_bytes);
     const std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt_bytes);
     MasterKey::instance().set_key(master_key);
     user_data.uuid = Server::instance().get_new_user_uuid();
+
     //generate and encrpyt KEK with master key
     std::vector<uint8_t> kek_bytes = KeyGeneration::generate_symmetric_key();
     KEKModel kek_data = KekService::encrypt_kek(
@@ -60,10 +115,24 @@ void UserManager::signup(const std::string& username, const std::string& email, 
     setKEK(std::make_shared<const KEKModel>(kek_data));
 
     //TODO generate and encrypt user keys with kek
-    IdentityKeyPairs identity_keys = KeyGeneration::generate_identity_keypair();
-
-
-    //TODO generate and encrypt user keys with master key
+    const IdentityKeyPairs identity_keys = KeyGeneration::generate_identity_keypair();
+    const SignedPreKey signed_prekey = KeyGeneration::generate_signed_prekey(identity_keys.ed25519_private->to_evp_pkey());
+    std::vector<OPKPair> opks;
+    VaultManager vault_manager = VaultManager();
+    vault_manager.generate_user_vault(
+        kek_bytes,
+        opks,
+        user_data,
+        identity_keys,
+        signed_prekey
+    );
+    nlohmann::json server_response = save();
+    if (server_response.empty()) {
+        throw std::runtime_error("Failed to save user data remotely.");
+    }
+    user_data.uuid = server_response["user"]["uuid"].get<std::string>();
+    // TODO save user & kek to db
+    return true; // Return true if signup is successful
 }
 
 void UserManager::changePassword(const std::string& username, const std::string& password) {

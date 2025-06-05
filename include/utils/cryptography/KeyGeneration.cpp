@@ -7,6 +7,7 @@
 #include <vector>
 #include <tuple>
 #include "keys/Ed25519Key.h"
+#include "keys/SignedPreKey.h"
 #include "keys/X25519Key.h"
 
 std::vector<uint8_t> KeyGeneration::derive_master_key(const std::string& password, const std::vector<uint8_t>& salt) {
@@ -81,7 +82,7 @@ std::vector<uint8_t> KeyGeneration::generate_symmetric_key() {
     return kek;
 }
 
-std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>> KeyGeneration::generate_signed_prekey(
+SignedPreKey KeyGeneration::generate_signed_prekey(
     EVP_PKEY *identity_key) {
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, nullptr);
     EVP_PKEY* priv = nullptr;
@@ -119,7 +120,11 @@ std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>> KeyGener
 
     auto* x_priv = new X25519PrivateKey(x_priv_bytes);
     auto* x_pub = new X25519PublicKey(x_pub_bytes);
-    std::tuple signedkey= std::make_tuple(x_priv, x_pub, signature);
+    // std::tuple signedkey= std::make_tuple(x_priv, x_pub, signature);
+    SignedPreKey signedkey;
+    signedkey.private_key = std::unique_ptr<X25519PrivateKey>(x_priv);
+    signedkey.public_key = std::unique_ptr<X25519PublicKey>(x_pub);
+    signedkey.signature = std::move(signature);
     return signedkey;
 }
 

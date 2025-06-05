@@ -5,6 +5,7 @@
 
 #include "Server.h"
 #include "UI.cpp"
+#include "UserManager.h"
 #include "database/db_instance.h"
 #include "src/Auth.h"
 #include "src/models/UserModel.h"
@@ -128,9 +129,11 @@ int main(int argc, char *argv[]) {
                 ui.signupStatusLabel->setText("Username already exists. Please choose another.");
                 return;
             }
-            Auth::SignUpResult result = Auth::signup(username.toStdString(), email.toStdString(), password.toStdString());
-            if (!result.success) {
-                ui.signupStatusLabel->setText(QString::fromStdString(result.message));
+            // Auth::SignUpResult result = Auth::signup(username.toStdString(), email.toStdString(), password.toStdString());
+            UserManager* userManager = new UserManager();
+            bool result = userManager->signup(username.toStdString(), email.toStdString(), password.toStdString());
+            if (!result) {
+                ui.signupStatusLabel->setText(QString::fromStdString("Signup failed. Please try again."));
                 return;
             }
 
