@@ -19,6 +19,9 @@ public:
 
     void handle_saving_remote_user_data();
     std::vector<uint8_t> get_decrypted_kek();
+    void setUser(const UserModel& user);
+    void setUser(const std::string& username, const std::string& email);
+
 protected:
     void load(const std::string& identifier) override;
     nlohmann::json save() override;
