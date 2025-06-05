@@ -13,6 +13,8 @@
 #include <vector>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
+#include <openssl/evp.h>
+#include <openssl/err.h>
 #include "../include/utils/cryptography/CryptoUtils.h"
 #include "../include/utils/cryptography/VaultManager.h"
 #include "../include/utils/cryptography/KeyGeneration.h"
@@ -44,7 +46,7 @@ namespace {
     class MasterKeyManager {
     private:
         std::vector<uint8_t> master_key;
-        mutable std::mutex key_mutex;  // Made mutable to allow locking in const member functions
+        mutable std::mutex key_mutex;
 
     public:
         static MasterKeyManager& get_instance() {
@@ -67,6 +69,106 @@ namespace {
             return master_key;
         }
     };
+
+    // Helper function to get a nonce from the server
+    std::optional<std::string> get_nonce(const std::string& user_uuid) {
+        CURL* curl = curl_easy_init();
+        if (!curl) return std::nullopt;
+
+        std::string response;
+        std::string url = server_url + "/api/nonce";
+        
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        headers = curl_slist_append(headers, ("X-User-UUID: " + user_uuid).c_str());
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
+            auto* str = static_cast<std::string*>(userdata);
+            str->append(ptr, size * nmemb);
+            return size * nmemb;
+        });
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        CURLcode res = curl_easy_perform(curl);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+
+        if (res != CURLE_OK) return std::nullopt;
+
+        try {
+            auto json = nlohmann::json::parse(response);
+            if (json.contains("nonce")) {
+                return json["nonce"].get<std::string>();
+            }
+        } catch (...) {
+            // JSON parsing failed
+        }
+        return std::nullopt;
+    }
+
+    // Helper function to create authentication headers
+    std::optional<std::pair<std::string, std::string>> create_auth_headers(
+        const std::string& user_uuid,
+        const std::string& nonce,
+        const std::string& payload,
+        const std::vector<uint8_t>& private_key_bytes
+    ) {
+        try {
+            // Create Ed25519 private key from bytes
+            Ed25519PrivateKey private_key(private_key_bytes);
+            EVP_PKEY* pkey = private_key.to_evp_pkey();
+            if (!pkey) {
+                return std::nullopt;
+            }
+
+            // Combine payload and nonce
+            std::string message = payload + nonce;
+            std::vector<uint8_t> message_bytes(message.begin(), message.end());
+
+            // Create signing context
+            EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+            if (!ctx) {
+                EVP_PKEY_free(pkey);
+                return std::nullopt;
+            }
+
+            // Initialize signing operation
+            if (EVP_DigestSignInit(ctx, nullptr, nullptr, nullptr, pkey) != 1) {
+                EVP_MD_CTX_free(ctx);
+                EVP_PKEY_free(pkey);
+                return std::nullopt;
+            }
+
+            // Sign the message
+            size_t sig_len;
+            if (EVP_DigestSign(ctx, nullptr, &sig_len, message_bytes.data(), message_bytes.size()) != 1) {
+                EVP_MD_CTX_free(ctx);
+                EVP_PKEY_free(pkey);
+                return std::nullopt;
+            }
+
+            std::vector<uint8_t> signature(sig_len);
+            if (EVP_DigestSign(ctx, signature.data(), &sig_len, message_bytes.data(), message_bytes.size()) != 1) {
+                EVP_MD_CTX_free(ctx);
+                EVP_PKEY_free(pkey);
+                return std::nullopt;
+            }
+
+            // Clean up
+            EVP_MD_CTX_free(ctx);
+            EVP_PKEY_free(pkey);
+
+            // Convert signature to base64
+            std::string signature_b64 = CryptoUtils::base64_encode(signature);
+            
+            return std::make_pair(nonce, signature_b64);
+        } catch (...) {
+            return std::nullopt;
+        }
+    }
 }
 
 // Helper function to format AAD for KEK decryption
@@ -374,20 +476,94 @@ Auth::LoginResult Auth::login(const std::string& username, const std::string& pa
             return { false, "Invalid username or password", "" };
         }
 
-        // Update local KEK if server's updated_at is newer
-        auto local_kek = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == user.id));
-        if (!local_kek.empty() && local_kek[0].updated_at != server_updated_at) {
-            local_kek[0].enc_kek_cyphertext = kek_info["enc_kek_cyphertext"].get<std::string>();
-            local_kek[0].nonce = kek_info["nonce"].get<std::string>();
-            local_kek[0].updated_at = server_updated_at;
-            db().update(local_kek[0]);
+        // Get nonce from server
+        auto nonce_opt = get_nonce(user.uuid);
+        if (!nonce_opt) {
+            MasterKeyManager::get_instance().clear();
+            return { false, "Unable to get authentication nonce", "" };
         }
 
-        // Reset failed attempts on successful login
-        std::lock_guard<std::mutex> lock(login_mutex);
-        login_attempts.erase(username);
+        // Decrypt identity key for signing
+        auto identity_key_private = CryptoUtils::decrypt_with_key(
+            CryptoUtils::base64_decode(user.ed25519_identity_key_private_nonce),
+            CryptoUtils::base64_decode(user.ed25519_identity_key_private_enc),
+            kek,
+            std::nullopt
+        );
 
-        return { true, "Login successful!", user.uuid };
+        // Create authentication headers
+        auto auth_headers_opt = create_auth_headers(
+            user.uuid,
+            nonce_opt.value(),
+            "",  // Empty payload for login
+            identity_key_private
+        );
+
+        if (!auth_headers_opt) {
+            MasterKeyManager::get_instance().clear();
+            return { false, "Failed to create authentication headers", "" };
+        }
+
+        // Make login request with authentication headers
+        CURL* curl = curl_easy_init();
+        if (!curl) {
+            MasterKeyManager::get_instance().clear();
+            return { false, "Unable to connect to server", "" };
+        }
+
+        std::string response;
+        std::string url = server_url + "/api/login";
+        
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        headers = curl_slist_append(headers, ("X-User-UUID: " + user.uuid).c_str());
+        headers = curl_slist_append(headers, ("X-Nonce: " + auth_headers_opt->first).c_str());
+        headers = curl_slist_append(headers, ("X-Signature: " + auth_headers_opt->second).c_str());
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
+            auto* str = static_cast<std::string*>(userdata);
+            str->append(ptr, size * nmemb);
+            return size * nmemb;
+        });
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        CURLcode res = curl_easy_perform(curl);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+
+        if (res != CURLE_OK) {
+            MasterKeyManager::get_instance().clear();
+            return { false, "Login request failed", "" };
+        }
+
+        try {
+            auto json = nlohmann::json::parse(response);
+            if (json.contains("error")) {
+                MasterKeyManager::get_instance().clear();
+                return { false, json["error"].get<std::string>(), "" };
+            }
+
+            // Update local KEK if server's updated_at is newer
+            auto local_kek = db().get_all<KEKModel>(where(c(&KEKModel::user_id) == user.id));
+            if (!local_kek.empty() && local_kek[0].updated_at != server_updated_at) {
+                local_kek[0].enc_kek_cyphertext = kek_info["enc_kek_cyphertext"].get<std::string>();
+                local_kek[0].nonce = kek_info["nonce"].get<std::string>();
+                local_kek[0].updated_at = server_updated_at;
+                db().update(local_kek[0]);
+            }
+
+            // Reset failed attempts on successful login
+            std::lock_guard<std::mutex> lock(login_mutex);
+            login_attempts.erase(username);
+
+            return { true, "Login successful!", user.uuid };
+        } catch (...) {
+            MasterKeyManager::get_instance().clear();
+            return { false, "Unable to process server response", "" };
+        }
     } catch (...) {
         MasterKeyManager::get_instance().clear();
         return { false, "Unable to process server response", "" };
