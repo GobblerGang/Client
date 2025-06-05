@@ -14,6 +14,7 @@ public:
     // #Default Constructor
     // Initializes a new UserManager instance
     UserManager();
+    ~UserManager() override;
     // #Function Declaration (call by const reference)
     // Authenticates a user with the provided credentials
     void login(const std::string& username, const std::string& password);
@@ -23,14 +24,6 @@ public:
     // #Function Declaration (call by const reference)
     // Changes the user's password after verifying the old password
     void changePassword(const std::string& user_uuid, const std::string& old_password, const std::string &new_password);
-    // #Function Declaration (returns bool)
-    // Verifies if the KEK (Key Encryption Key) is valid
-    bool checkKek();
-    // #Function Declaration
-    // Handles saving remote user data to local storage
-    void handle_saving_remote_user_data();
-    // #Function Declaration (call by const reference)
-    // Sets the user data from a UserModel instance
     void setUser(const UserModel& user);
     // #Function Declaration (call by const reference)
     // Sets the user data with provided username and email
