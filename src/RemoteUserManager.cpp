@@ -4,6 +4,8 @@
 
 #include "RemoteUserManager.h"
 
+#include "Server.h"
+
 RemoteUserManager::RemoteUserManager() {
     // TODO: implement constructor
 }
@@ -12,20 +14,33 @@ nlohmann::json RemoteUserManager::save() {
     // TODO: implement save logic
     // This should serialize user_data and keys_data to a string format (e.g., JSON)
     // UUID will be returned by the server. This will be returned to set in the DB
+    if (!user_remote_ptr || !keys_remote_ptr || !kek_data_ptr) {
+        throw std::runtime_error("RemoteUserManager: User, keys, or KEK data not set.");
+    }
+    std::string user_uuid = Server::instance().get_new_user_uuid();
+
     nlohmann::json j;
     j["user"] = {
-        {"username", user_remote.username},
-        {"email", user_remote.email},
-        {"salt", user_remote.salt}
+        {"uuid", user_uuid},
+        {"username", user_remote_ptr->username},
+        {"email", user_remote_ptr->email},
+        {"salt", user_remote_ptr->salt}
     };
     j["keys"] = {
-        {"ed25519_identity_key_public", keys_remote.ed25519_identity_key_public},
-        {"x25519_identity_key_public", keys_remote.x25519_identity_key_public},
-        {"signed_prekey_public", keys_remote.signed_prekey_public},
-        {"signed_prekey_signature", keys_remote.signed_prekey_signature},
-        {"opks", keys_remote.opks}
+        {"ed25519_identity_key_public", keys_remote_ptr->ed25519_identity_key_public},
+        {"x25519_identity_key_public", keys_remote_ptr->x25519_identity_key_public},
+        {"signed_prekey_public", keys_remote_ptr->signed_prekey_public},
+        {"signed_prekey_signature", keys_remote_ptr->signed_prekey_signature},
+        {"opks", keys_remote_ptr->opks}
     };
-    //TODO: send json payload to server
+    j["kek"] = {
+        {"encrypted_kek", kek_data_ptr->enc_kek_cyphertext},
+        {"kek_nonce", kek_data_ptr->nonce},
+        {"updated_at", kek_data_ptr->updated_at}
+    };
+    Server& server = Server::instance();
+    // TODO: this throws runtime error if the server request fails, ensure this is handled properly in calling function
+    server.create_user(j);
     return j;
 }
 
