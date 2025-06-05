@@ -15,8 +15,17 @@ class CryptoUtils {
 public:
     static std::vector<uint8_t> generate_nonce(std::size_t size = 12);
 
-    static std::pair<std::vector<uint8_t>, std::vector<uint8_t>>
-    encrypt_with_key(const std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);
+    /**
+     * Encrypts the given plaintext using the provided key and nonce.
+     *
+     * @param plaintext the plaintext to encrypt, must be a multiple of 16 bytes.
+     * @param key the key to use for encryption, must be 32 bytes (256 bits).
+     * @param associated_data optional associated data for additional authenticated data (AAD).
+     * @param nonce passed by reference, will be modified to contain the nonce used for encryption.
+     * @return Encrypted ciphertext as a vector of bytes.
+     */
+    static std::vector<uint8_t>
+    encrypt_with_key(const std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt, std::vector<uint8_t>& nonce);
 
     static std::vector<uint8_t>
     decrypt_with_key(const std::vector<uint8_t>& nonce, const std::vector<uint8_t>& ciphertext, const std::vector<uint8_t>& key, const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt);

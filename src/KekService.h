@@ -10,6 +10,7 @@ class KekService {
 public:
     static KEKModel encrypt_kek(const std::vector<uint8_t>& kek, const std::vector<uint8_t>& master_key, const std::string& user_uuid, int user_id);
 
+    //TODO remove pair, return only kek, get aad by ref
     static std::pair<std::vector<uint8_t>, std::vector<uint8_t>> decrypt_kek(const KEKModel& kek_model, const std::vector<uint8_t>& master_key, const std::string& user_uuid);
 
 private:

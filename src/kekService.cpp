@@ -9,14 +9,16 @@
 KEKModel KekService::encrypt_kek(const std::vector<uint8_t>& kek,
                                    const std::vector<uint8_t>& master_key,
                                    const std::string& user_uuid,
-                                   int user_id) {
-    std::string timestamp = get_current_iso8601_utc();
+                                   const int user_id) {
+    const std::string timestamp = get_current_iso8601_utc();
     std::vector<uint8_t> aad = format_aad(user_uuid, timestamp);
-    auto [nonce, ciphertext] = CryptoUtils::encrypt_with_key(kek, master_key, aad);
+    // Passing nonce by
+    std::vector<uint8_t> kek_nonce;
+    const auto ciphertext = CryptoUtils::encrypt_with_key(kek, master_key, aad, kek_nonce);
 
     KEKModel kek_model;
     kek_model.enc_kek_cyphertext = CryptoUtils::base64_encode(ciphertext);
-    kek_model.nonce = CryptoUtils::base64_encode(nonce);
+    kek_model.nonce = CryptoUtils::base64_encode(kek_nonce);
     kek_model.updated_at = timestamp;
     kek_model.user_id = user_id;
 
