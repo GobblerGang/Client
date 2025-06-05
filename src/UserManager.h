@@ -23,7 +23,7 @@ public:
     void setUser(const std::string& username, const std::string& email);
     std::vector<uint8_t> get_decrypted_kek() const;
 
-    bool check_kek_freshness();
+    void check_kek_freshness();
 protected:
     void load(const std::string& identifier) override;
     nlohmann::json save() override;

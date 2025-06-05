@@ -156,7 +156,7 @@ std::vector<uint8_t> UserManager::get_decrypted_kek() const {
 };
 
 
-bool UserManager::check_kek_freshness() {
+void UserManager::check_kek_freshness() {
     // Fetch KEK info from server
     KEKModel server_kek_info = Server::instance().get_kek_info(user_data.uuid);
 
