@@ -430,6 +430,48 @@ std::pair<nlohmann::json, std::string> Server::download_file(
     }
 }
 
+std::pair<nlohmann::json, std::string> Server::revoke_file_access(
+    const std::string &file_uuid,
+    const std::string &file_ciphertext,
+    const std::string &file_nonce,
+    const std::string &enc_file_k,
+    const std::string &k_file_nonce,
+    const std::vector<nlohmann::json> &pacs, // List of PACs as JSON objects
+    const std::string &owner_uuid,
+    const Ed25519PrivateKey &private_key,
+    const std::string &filename,
+    const std::string &mime_type
+) {
+    nlohmann::json payload = {
+        {"file_uuid", file_uuid},
+        {"file_ciphertext", file_ciphertext},
+        {"file_nonce", file_nonce},
+        {"enc_file_k", enc_file_k},
+        {"k_file_nonce", k_file_nonce},
+        {"pacs", pacs},  // assuming pacs already JSON serialized
+        {"filename", filename},
+        {"mime_type", mime_type}
+    };
+    std::vector<std::string> headers = set_headers(private_key, owner_uuid, payload);
+    const std::string url = server_url() + "/api/files/revoke-access";
+
+    HttpResponse res = put_request(url, payload.dump(), headers);
+
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+        return {json_response, ""};
+    } catch (const std::exception &e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
 
 
 
