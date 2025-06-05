@@ -236,3 +236,10 @@ bool CryptoUtils::verify_spk(const std::vector<uint8_t> &spk_public, const std::
     EVP_PKEY_free(pubkey);
     return result;
 }
+inline std::vector<uint8_t> CryptoUtils::generate_nonce(const std::size_t size) {
+    std::vector<uint8_t> nonce(size);
+    if (RAND_bytes(nonce.data(), static_cast<int>(size)) != 1) {
+        throw std::runtime_error("Failed to generate secure nonce");
+    }
+    return nonce;
+}

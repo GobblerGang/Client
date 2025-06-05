@@ -194,38 +194,40 @@ nlohmann::json Server::update_kek_info(const std::string &encrypted_kek,
     HttpResponse resp = put_request(server_url_ + "/api/kek?user_uuid=" + user_uuid, payload, headers);
     return parse_and_check_response(resp, "update_kek_info");
 }
+//TODO
+// std::pair<nlohmann::json, std::string> Server::get_user_by_name(const std::string &username) {
+// }
+//
+// std::pair<nlohmann::json, std::string> Server::upload_file(const std::string &file_ciphertext,
+//     const std::string &file_name, const std::string &owner_uuid, const std::string &mime_type,
+//     const std::string &file_nonce, const std::string &enc_file_k, const std::string &k_file_nonce,
+//     const Ed25519PrivateKey &private_key) {
+// }
+//
+// std::pair<nlohmann::json, std::string> Server::get_user_keys(const std::string &sender_user_uuid,
+//     const std::string &recipient_uuid, const Ed25519PrivateKey &private_key) {
+// }
+//
+// std::pair<nlohmann::json, std::string> Server::send_pac(const PAC &pac, const std::string &sender_uuid,
+//     const Ed25519PrivateKey &private_key) {
+// }
+//
+// std::pair<nlohmann::json, std::string> Server::download_file(const std::string &file_uuid,
+//     const Ed25519PrivateKey &private_key, const std::string &user_uuid) {
+// }
+//
+// std::pair<nlohmann::json, std::string> Server::get_owned_files(const std::string &user_id,
+//     const Ed25519PrivateKey &private_key) {
+// }
+//
+// nlohmann::json Server::get_user_pacs(const std::string &user_id, const Ed25519PrivateKey &private_key) {
+// }
+//
+// std::pair<nlohmann::json, std::string> Server::get_file_info(const std::string &file_uuid, const std::string &user_uuid,
+//     const Ed25519PrivateKey &private_key) {
+//
+// }
 
-std::pair<nlohmann::json, std::string> Server::get_user_by_name(const std::string &username) {
-}
-
-std::pair<nlohmann::json, std::string> Server::upload_file(const std::string &file_ciphertext,
-    const std::string &file_name, const std::string &owner_uuid, const std::string &mime_type,
-    const std::string &file_nonce, const std::string &enc_file_k, const std::string &k_file_nonce,
-    const Ed25519PrivateKey &private_key) {
-}
-
-std::pair<nlohmann::json, std::string> Server::get_user_keys(const std::string &sender_user_uuid,
-    const std::string &recipient_uuid, const Ed25519PrivateKey &private_key) {
-}
-
-std::pair<nlohmann::json, std::string> Server::send_pac(const PAC &pac, const std::string &sender_uuid,
-    const Ed25519PrivateKey &private_key) {
-}
-
-std::pair<nlohmann::json, std::string> Server::download_file(const std::string &file_uuid,
-    const Ed25519PrivateKey &private_key, const std::string &user_uuid) {
-}
-
-std::pair<nlohmann::json, std::string> Server::get_owned_files(const std::string &user_id,
-    const Ed25519PrivateKey &private_key) {
-}
-
-nlohmann::json Server::get_user_pacs(const std::string &user_id, const Ed25519PrivateKey &private_key) {
-}
-
-std::pair<nlohmann::json, std::string> Server::get_file_info(const std::string &file_uuid, const std::string &user_uuid,
-    const Ed25519PrivateKey &private_key) {
-}
 
 std::string Server::get_new_user_uuid() {
     HttpResponse resp = get_request(server_url_ + "/api/generate-uuid");
