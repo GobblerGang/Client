@@ -5,9 +5,11 @@
 #include <map>
 #include <optional>
 #include "keys/Ed25519Key.h"
+#include "keys/IdentityKeyPairs.h"
 #include "keys/X25519Key.h"
 #include "models/UserModel.h"
 #include "keys/OPKPair.h"
+#include "keys/SignedPreKey.h"
 
 // Forward declaration to avoid circular dependency
 class CryptoUtils;
@@ -29,17 +31,12 @@ public:
         const std::vector<uint8_t>& spk_private_bytes,
         const std::map<std::string, std::string>& vault);
     
-    static std::map<std::string, std::string> generate_user_vault(
-        const Ed25519PrivateKey& ed25519_identity_private,
-        const Ed25519PublicKey& ed25519_identity_public,
-        const X25519PrivateKey& x25519_identity_private,
-        const X25519PublicKey& x25519_identity_public,
-        const X25519PrivateKey& spk_private,
-        const X25519PublicKey& spk_public,
-        const std::vector<uint8_t>& spk_signature,
-        const std::vector<uint8_t>& salt,
-        const std::vector<uint8_t>& master_key,
-        const std::vector<OPKPair>& opks);
+    static void generate_user_vault(
+        const std::vector<uint8_t> &kek,
+        const std::vector<OPKPair> &opks,
+        UserModel &user,
+        const IdentityKeyPairs &identity_key_pairs,
+        const SignedPreKey &spk);
     
     static std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>
     decrypt_all_opks(const std::string& opks_json, const std::vector<uint8_t>& master_key);

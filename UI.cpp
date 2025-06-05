@@ -44,7 +44,7 @@ public:
         window = new QWidget();
         window->setWindowTitle("GG File Sharing");
         window->resize(700, 450);
-        window->setStyleSheet("background-color: #f9f9f9;");
+        window->setStyleSheet("background-color: #000000; color: #ffffff;");
 
         tabs = new QTabWidget();
         tabs->setTabPosition(QTabWidget::North);

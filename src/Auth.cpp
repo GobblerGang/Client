@@ -90,121 +90,121 @@ static std::vector<uint8_t> generateSalt(size_t len = 16) {
 
 // --- SIGNUP ---
 Auth::SignUpResult Auth::signup(const std::string& username, const std::string& email, const std::string& password) {
-    if (usernameExists(username)) {
-        return { false, "Username already exists" };
-    }
-    if (emailExists(email)) {
-        return { false, "Email already registered" };
-    }
-    if (password.empty()) {
-        return { false, "Password is required" };
-    }
-
-    std::vector<uint8_t> salt = generateSalt();
-    std::vector<uint8_t> masterKey = KeyGeneration::derive_master_key(password, salt);
-    std::vector<uint8_t> kek = KeyGeneration::generate_symmetric_key();
-
-    // Generate identity keypairs
-    auto identityKeypairs = KeyGeneration::generate_identity_keypair();
-    Ed25519PrivateKey* ed25519_priv = identityKeypairs.first.first;
-    Ed25519PublicKey* ed25519_pub = identityKeypairs.first.second;
-    X25519PrivateKey* x25519_priv = identityKeypairs.second.first;
-    X25519PublicKey* x25519_pub = identityKeypairs.second.second;
-
-    // Generate signed prekey
-    auto spk_tuple = KeyGeneration::generate_signed_prekey(ed25519_priv->to_evp_pkey());
-    X25519PrivateKey* spk_priv = std::get<0>(spk_tuple);
-    X25519PublicKey* spk_pub = std::get<1>(spk_tuple);
-    std::vector<uint8_t> spk_sig = std::get<2>(spk_tuple);
-
-    // Generate OPKs (one-time prekeys)
-    std::vector<OPKPair> opks; // You should implement CryptoUtils::generate_opks() if needed
-
-    // Generate vault (returns a map of field name -> base64 string)
-    auto vault_map = VaultManager::generate_user_vault(
-        *ed25519_priv, *ed25519_pub,
-        *x25519_priv, *x25519_pub,
-        *spk_priv, *spk_pub, spk_sig,
-        salt, masterKey, opks
-    );
-
-    auto uuidOpt = requestUUIDFromServer();
-    if (!uuidOpt.has_value()) {
-        // Clean up heap allocations
-        delete ed25519_priv;
-        delete ed25519_pub;
-        delete x25519_priv;
-        delete x25519_pub;
-        delete spk_priv;
-        delete spk_pub;
-        return { false, "Error communicating with the server" };
-    }
-    std::string uuid = uuidOpt.value();
-
-    // Encrypt KEK with masterKey and uuid as associated data
-    std::string kek_nonce_b64, kek_ciphertext_b64;
-    try {
-        std::vector<uint8_t> nonce;
-        auto kek_enc = CryptoUtils::encrypt_with_key(kek, masterKey, nonce, std::vector<uint8_t>(uuid.begin(), uuid.end()));
-        kek_nonce_b64 = CryptoUtils::base64_encode(nonce);
-        kek_ciphertext_b64 = CryptoUtils::base64_encode(kek_enc);
-    } catch (...) {
-        // Clean up heap allocations
-        delete ed25519_priv;
-        delete ed25519_pub;
-        delete x25519_priv;
-        delete x25519_pub;
-        delete spk_priv;
-        delete spk_pub;
-        return { false, "Failed to encrypt KEK" };
-    }
-
-    // Prepare User struct
-    UserModelORM user;
-    user.uuid = uuid;
-    user.username = username;
-    user.email = email;
-    user.salt = vault_map["salt"];
-    user.ed25519_identity_key_public = vault_map["ed25519_identity_key_public"];
-    user.ed25519_identity_key_private_enc = vault_map["ed25519_identity_key_private_enc"];
-    user.ed25519_identity_key_private_nonce = vault_map["ed25519_identity_key_private_nonce"];
-    user.x25519_identity_key_public = vault_map["x25519_identity_key_public"];
-    user.x25519_identity_key_private_enc = vault_map["x25519_identity_key_private_enc"];
-    user.x25519_identity_key_private_nonce = vault_map["x25519_identity_key_private_nonce"];
-    user.signed_prekey_public = vault_map["signed_prekey_public"];
-    user.signed_prekey_signature = vault_map["signed_prekey_signature"];
-    user.signed_prekey_private_enc = vault_map["signed_prekey_private_enc"];
-    user.signed_prekey_private_nonce = vault_map["signed_prekey_private_nonce"];
-    user.opks_json = vault_map["opks"];
-
-    // Prepare UserKEK struct (assumes you have a UserKEK struct/table)
-    KEKModel userKek;
-    userKek.enc_kek_cyphertext = kek_ciphertext_b64;
-    userKek.nonce = kek_nonce_b64;
-
-    // Insert user and KEK into DB
-    try {
-        db().insert(user);
-        db().insert(userKek);
-    } catch (...) {
-        // Clean up heap allocations
-        delete ed25519_priv;
-        delete ed25519_pub;
-        delete x25519_priv;
-        delete x25519_pub;
-        delete spk_priv;
-        delete spk_pub;
-        return { false, "Failed to create user or save KEK" };
-    }
-
-    // Clean up heap allocations
-    delete ed25519_priv;
-    delete ed25519_pub;
-    delete x25519_priv;
-    delete x25519_pub;
-    delete spk_priv;
-    delete spk_pub;
-
+    // if (usernameExists(username)) {
+    //     return { false, "Username already exists" };
+    // }
+    // if (emailExists(email)) {
+    //     return { false, "Email already registered" };
+    // }
+    // if (password.empty()) {
+    //     return { false, "Password is required" };
+    // }
+    //
+    // std::vector<uint8_t> salt = generateSalt();
+    // std::vector<uint8_t> masterKey = KeyGeneration::derive_master_key(password, salt);
+    // std::vector<uint8_t> kek = KeyGeneration::generate_symmetric_key();
+    //
+    // // Generate identity keypairs
+    // auto identityKeypairs = KeyGeneration::generate_identity_keypair();
+    // Ed25519PrivateKey* ed25519_priv = identityKeypairs.first.first;
+    // Ed25519PublicKey* ed25519_pub = identityKeypairs.first.second;
+    // X25519PrivateKey* x25519_priv = identityKeypairs.second.first;
+    // X25519PublicKey* x25519_pub = identityKeypairs.second.second;
+    //
+    // // Generate signed prekey
+    // auto spk_tuple = KeyGeneration::generate_signed_prekey(ed25519_priv->to_evp_pkey());
+    // X25519PrivateKey* spk_priv = std::get<0>(spk_tuple);
+    // X25519PublicKey* spk_pub = std::get<1>(spk_tuple);
+    // std::vector<uint8_t> spk_sig = std::get<2>(spk_tuple);
+    //
+    // // Generate OPKs (one-time prekeys)
+    // std::vector<OPKPair> opks; // You should implement CryptoUtils::generate_opks() if needed
+    //
+    // // Generate vault (returns a map of field name -> base64 string)
+    // auto vault_map = VaultManager::generate_user_vault(
+    //     *ed25519_priv, *ed25519_pub,
+    //     *x25519_priv, *x25519_pub,
+    //     *spk_priv, *spk_pub, spk_sig,
+    //     salt, masterKey, opks
+    // );
+    //
+    // auto uuidOpt = requestUUIDFromServer();
+    // if (!uuidOpt.has_value()) {
+    //     // Clean up heap allocations
+    //     delete ed25519_priv;
+    //     delete ed25519_pub;
+    //     delete x25519_priv;
+    //     delete x25519_pub;
+    //     delete spk_priv;
+    //     delete spk_pub;
+    //     return { false, "Error communicating with the server" };
+    // }
+    // std::string uuid = uuidOpt.value();
+    //
+    // // Encrypt KEK with masterKey and uuid as associated data
+    // std::string kek_nonce_b64, kek_ciphertext_b64;
+    // try {
+    //     std::vector<uint8_t> nonce;
+    //     auto kek_enc = CryptoUtils::encrypt_with_key(kek, masterKey, nonce, std::vector<uint8_t>(uuid.begin(), uuid.end()));
+    //     kek_nonce_b64 = CryptoUtils::base64_encode(nonce);
+    //     kek_ciphertext_b64 = CryptoUtils::base64_encode(kek_enc);
+    // } catch (...) {
+    //     // Clean up heap allocations
+    //     delete ed25519_priv;
+    //     delete ed25519_pub;
+    //     delete x25519_priv;
+    //     delete x25519_pub;
+    //     delete spk_priv;
+    //     delete spk_pub;
+    //     return { false, "Failed to encrypt KEK" };
+    // }
+    //
+    // // Prepare User struct
+    // UserModelORM user;
+    // user.uuid = uuid;
+    // user.username = username;
+    // user.email = email;
+    // user.salt = vault_map["salt"];
+    // user.ed25519_identity_key_public = vault_map["ed25519_identity_key_public"];
+    // user.ed25519_identity_key_private_enc = vault_map["ed25519_identity_key_private_enc"];
+    // user.ed25519_identity_key_private_nonce = vault_map["ed25519_identity_key_private_nonce"];
+    // user.x25519_identity_key_public = vault_map["x25519_identity_key_public"];
+    // user.x25519_identity_key_private_enc = vault_map["x25519_identity_key_private_enc"];
+    // user.x25519_identity_key_private_nonce = vault_map["x25519_identity_key_private_nonce"];
+    // user.signed_prekey_public = vault_map["signed_prekey_public"];
+    // user.signed_prekey_signature = vault_map["signed_prekey_signature"];
+    // user.signed_prekey_private_enc = vault_map["signed_prekey_private_enc"];
+    // user.signed_prekey_private_nonce = vault_map["signed_prekey_private_nonce"];
+    // user.opks_json = vault_map["opks"];
+    //
+    // // Prepare UserKEK struct (assumes you have a UserKEK struct/table)
+    // KEKModel userKek;
+    // userKek.enc_kek_cyphertext = kek_ciphertext_b64;
+    // userKek.nonce = kek_nonce_b64;
+    //
+    // // Insert user and KEK into DB
+    // try {
+    //     db().insert(user);
+    //     db().insert(userKek);
+    // } catch (...) {
+    //     // Clean up heap allocations
+    //     delete ed25519_priv;
+    //     delete ed25519_pub;
+    //     delete x25519_priv;
+    //     delete x25519_pub;
+    //     delete spk_priv;
+    //     delete spk_pub;
+    //     return { false, "Failed to create user or save KEK" };
+    // }
+    //
+    // // Clean up heap allocations
+    // delete ed25519_priv;
+    // delete ed25519_pub;
+    // delete x25519_priv;
+    // delete x25519_pub;
+    // delete spk_priv;
+    // delete spk_pub;
+    //
     return { true, "Registration successful! Please login." };
 }
 
