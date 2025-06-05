@@ -32,10 +32,13 @@ namespace {
     const int LOCKOUT_DURATION_SECONDS = 300; // 5 minutes
 
     const std::string DEFAULT_SERVER_URL = "https://gobblergang.gobbler.info";
-    std::string server_url = Config::get_instance().server_url();
-    if (server_url.empty()) {
-        server_url = DEFAULT_SERVER_URL;
+    
+    std::string get_server_url() {
+        std::string url = Config::get_instance().server_url();
+        return url.empty() ? DEFAULT_SERVER_URL : url;
     }
+    
+    const std::string server_url = get_server_url();
 }
 
 // Helper to get current ISO8601 time
