@@ -21,7 +21,7 @@ public:
 
     void setUser(const UserModel& user);
     void setUser(const std::string& username, const std::string& email);
-    std::vector<uint8_t> get_decrypted_kek() const;
+    std::vector<uint8_t> get_decrypted_kek(const std::vector<uint8_t> &master_key) const;
 
     void check_kek_freshness();
 protected:

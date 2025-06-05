@@ -143,10 +143,10 @@ void UserManager::setUser(const std::string& username, const std::string& email)
     this->user_data.email = email;
 }
 
-std::vector<uint8_t> UserManager::get_decrypted_kek() const {
+std::vector<uint8_t> UserManager::get_decrypted_kek(const std::vector<uint8_t> &master_key) const {
     // Get the current KEK model and user UUID
     KEKModel kek_model = get_local_kek(user_data.id);
-    const std::vector<uint8_t>& master_key = MasterKey::instance().get();
+    // const std::vector<uint8_t>& master_key = MasterKey::instance().get();
 
     // Decrypt the KEK using KekService
     const std::string& user_uuid = user_data.uuid;
