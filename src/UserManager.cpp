@@ -138,7 +138,12 @@ void UserManager::changePassword(const std::string& user_uuid, const std::string
     // Implement change password logic here
     // 1. Check if the old password is correct
     load(user_uuid);
-    bool is_fresh = check_kek_freshness();
+    check_kek_freshness();
+    setKEK(std::make_shared<const KEKModel>(get_local_kek(user_data.id)));
+    const std::vector<uint8_t> salt_bytes = CryptoUtils::base64_decode(user_data.salt);
+    std::vector<uint8_t> old_master_key = MasterKey::instance().derive_key(old_password,salt_bytes);
+
+    std::vector<uint8_t> kek = get_decrypted_kek();
 
 
 }
