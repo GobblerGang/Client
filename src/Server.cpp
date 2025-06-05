@@ -221,8 +221,6 @@ UserModel Server::get_user_by_name(const std::string& username) {
     user.username = response_json["user"]["username"];
     user.email = response_json["user"]["email"];
     user.salt = response_json["user"]["salt"];
-    user.created_at = response_json["user"]["created_at"];
-    user.updated_at = response_json["user"]["updated_at"];
 
     return user;
 }

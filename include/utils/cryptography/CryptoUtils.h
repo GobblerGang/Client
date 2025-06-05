@@ -44,7 +44,9 @@ public:
     const std::optional<std::string> &mime_type
     );
 
-    static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key); // Ed25519
+    // #Function with raw pointer parameter
+    static bool verify_pac(const nlohmann::json &pac_json, EVP_PKEY *issuer_public_key);
+
     /**
      *
      * @param spk_public - The public key of the signed prekey.
