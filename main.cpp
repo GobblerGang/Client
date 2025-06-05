@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
     const MainWindowUI ui;
     QString currentUser;
-
+    static UserManager userManager; // Persistent instance
     // Function to switch to login/signup tab
     auto switchToAuthTabs = [&]() {
         currentUser.clear();
@@ -75,6 +75,8 @@ int main(int argc, char *argv[]) {
     });
 
     // Login
+    // main.cpp
+
     QObject::connect(ui.loginButton, &QPushButton::clicked, [&]() {
         QString username = ui.loginUsernameEdit->text().trimmed();
         QString password = ui.loginPasswordEdit->text().trimmed();
@@ -85,27 +87,16 @@ int main(int argc, char *argv[]) {
         }
 
         try {
-            auto users = db().get_all<UserModelORM>(
-                where(c(&UserModelORM::username) == username.toStdString())
-            );
-
-            if (users.empty()) {
-                ui.loginStatusLabel->setText("User not found. Please check your username.");
-                return;
-            }
-
-            const UserModelORM& user = users.front();
-
-            // Replace this with secure password check
-            if (user.salt == password.toStdString()) {
+            bool result = userManager.login(username.toStdString(), password.toStdString());
+            if (result) {
                 currentUser = username;
                 ui.loginStatusLabel->setText("Login successful!");
                 switchToFilesTab();
             } else {
-                ui.loginStatusLabel->setText("Incorrect password. Please try again.");
+                ui.loginStatusLabel->setText("Login failed. Please try again.");
             }
         } catch (const std::exception& e) {
-            ui.loginStatusLabel->setText("Login error: " + QString(e.what()));
+            ui.loginStatusLabel->setText(QString::fromStdString(e.what()));
         }
     });
 
