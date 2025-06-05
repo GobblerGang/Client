@@ -17,10 +17,7 @@ std::vector<uint8_t> KeyGeneration::derive_master_key(const std::string& passwor
     return key;
 }
 
-std::pair<
-    std::pair<Ed25519PrivateKey*, Ed25519PublicKey*>,
-    std::pair<X25519PrivateKey*, X25519PublicKey*>
-> KeyGeneration::generate_identity_keypair() {
+IdentityKeyPairs KeyGeneration::generate_identity_keypair() {
     // === Generate Ed25519 Key ===
     EVP_PKEY_CTX* ed_ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, nullptr);
     EVP_PKEY* ed_pkey = nullptr;
@@ -67,10 +64,13 @@ std::pair<
     EVP_PKEY_free(ed_pkey);
     EVP_PKEY_free(x_pkey);
 
-    return {
-        {ed_priv, ed_pub},
-        {x_priv, x_pub}
-    };
+    IdentityKeyPairs key_pair;
+    key_pair.ed25519_private = std::unique_ptr<Ed25519PrivateKey>(ed_priv);
+    key_pair.ed25519_public = std::unique_ptr<Ed25519PublicKey>(ed_pub);
+    key_pair.x25519_private = std::unique_ptr<X25519PrivateKey>(x_priv);
+    key_pair.x25519_public = std::unique_ptr<X25519PublicKey>(x_pub);
+
+    return key_pair;
 }
 
 std::vector<uint8_t> KeyGeneration::generate_symmetric_key() {
