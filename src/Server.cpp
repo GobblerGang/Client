@@ -99,7 +99,6 @@ std::string Server::get_server_nonce(const std::string &user_uuid) {
     }
 }
 
-
 std::string Server::get_new_user_uuid() {
     HttpResponse resp = get_request(server_url_ + "/api/generate-uuid");
     if (!resp.success) {
@@ -119,8 +118,6 @@ std::string Server::get_new_user_uuid() {
         throw std::runtime_error("Failed to parse UUID response: " + std::string(e.what()));
     }
 }
-
-
 // nlohmann::json Server::create_user(const nlohmann::json& user_data) const {
 //     CURL* curl = curl_easy_init();
 //     if (!curl) throw std::runtime_error("Failed to initialize CURL");
