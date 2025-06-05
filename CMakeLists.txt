@@ -71,13 +71,19 @@ set(SOURCES
         main.cpp
         UI.cpp
         src/auth.cpp
+
         include/utils/cryptography/CryptoUtils.cpp
-        include/utils/cryptography/keys/MasterKey.cpp
+        include/utils/cryptography/3xDH.cpp
         include/utils/cryptography/VaultManager.cpp
+        include/utils/cryptography/keyGeneration.cpp
+
+        include/utils/cryptography/keys/MasterKey.cpp
         include/utils/cryptography/keys/Ed25519Key.cpp
         include/utils/cryptography/keys/X25519Key.cpp
+
         include/utils/dataclasses/PAC.cpp
         include/utils/dataclasses/Vault.cpp
+
         src/UserManager.cpp
         src/UserManager.h
         src/Server.cpp
@@ -89,10 +95,15 @@ set(HEADERS
         include/sqlite_orm/sqlite_orm.h
         include/utils/dataclasses/PAC.h
         include/utils/cryptography/CryptoUtils.h
-        include/utils/cryptography/keys/MasterKey.h
+        include/utils/cryptography/keyGeneration.h
         include/utils/cryptography/VaultManager.h
+
+        include/utils/cryptography/keys/MasterKey.h
         include/utils/cryptography/keys/Ed25519Key.h
         include/utils/cryptography/keys/X25519Key.h
+        include/utils/cryptography/keys/OPKPair.h
+        include/utils/cryptography/3xDH.h
+
         include/database/schema.hpp
         include/database/db_instance.h
         src/auth.h

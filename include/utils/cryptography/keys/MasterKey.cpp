@@ -1,5 +1,5 @@
 #include "MasterKey.h"
-#include "utils/cryptography//CryptoUtils.h"
+#include "utils/cryptography/KeyGeneration.h"
 #include <random>
 
 MasterKey& MasterKey::instance() {
@@ -34,7 +34,7 @@ void MasterKey::clear() {
 }
 
 std::vector<uint8_t> MasterKey::derive_key(const std::string& password, const std::vector<uint8_t>& salt) {
-    return CryptoUtils::derive_master_key(password, salt);
+    return KeyGeneration::derive_master_key(password, salt);
 }
 
 MasterKey::~MasterKey() {

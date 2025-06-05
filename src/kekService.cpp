@@ -15,8 +15,8 @@ KEKModel KekService::encrypt_kek(const std::vector<uint8_t>& kek,
     auto [nonce, ciphertext] = CryptoUtils::encrypt_with_key(kek, master_key, aad);
 
     KEKModel kek_model;
-    kek_model.enc_kek_cyphertext = VaultManager::base64_encode(ciphertext);
-    kek_model.nonce = VaultManager::base64_encode(nonce);
+    kek_model.enc_kek_cyphertext = CryptoUtils::base64_encode(ciphertext);
+    kek_model.nonce = CryptoUtils::base64_encode(nonce);
     kek_model.updated_at = timestamp;
     kek_model.user_id = user_id;
 
