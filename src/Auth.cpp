@@ -102,7 +102,7 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
 
     std::vector<uint8_t> salt = generateSalt();
     std::vector<uint8_t> masterKey = KeyGeneration::derive_master_key(password, salt);
-    std::vector<uint8_t> kek = KeyGeneration::generate_kek();
+    std::vector<uint8_t> kek = KeyGeneration::generate_symmetric_key();
 
     // Generate identity keypairs
     auto identityKeypairs = KeyGeneration::generate_identity_keypair();
