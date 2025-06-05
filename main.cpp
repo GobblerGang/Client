@@ -16,17 +16,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     int argc = 0;
     char **argv = nullptr;
 #else
+#endif
 int main(int argc, char *argv[]) {
     // #Reference to Singleton
     Server& server = Server::instance();
 
     // #Raw Pointer to UserManager
     UserManager* userManager = new UserManager();
+    QApplication app(argc, argv);
+    const MainWindowUI ui;
+    QString currentUser;
 
     // #Raw Pointer to QListWidgetItem
     QListWidgetItem* selectedItem = ui.fileList->currentItem();
-#endif
-    QApplication app(argc, argv);
 
     bool ok = server.get_index();
     if (!ok) {
@@ -34,9 +36,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    const MainWindowUI ui;
-    QString currentUser;
-
+    // Persistent instance
     // Function to switch to login/signup tab
     auto switchToAuthTabs = [&]() {
         currentUser.clear();
@@ -89,6 +89,8 @@ int main(int argc, char *argv[]) {
     });
 
     // Login
+    // main.cpp
+
     QObject::connect(ui.loginButton, &QPushButton::clicked, [&]() {
         QString username = ui.loginUsernameEdit->text().trimmed();
         QString password = ui.loginPasswordEdit->text().trimmed();
@@ -99,27 +101,16 @@ int main(int argc, char *argv[]) {
         }
 
         try {
-            auto users = db().get_all<UserModelORM>(
-                where(c(&UserModelORM::username) == username.toStdString())
-            );
-
-            if (users.empty()) {
-                ui.loginStatusLabel->setText("User not found. Please check your username.");
-                return;
-            }
-
-            const UserModelORM& user = users.front();
-
-            // Replace this with secure password check
-            if (user.salt == password.toStdString()) {
+            bool result = userManager ->login(username.toStdString(), password.toStdString());
+            if (result) {
                 currentUser = username;
                 ui.loginStatusLabel->setText("Login successful!");
                 switchToFilesTab();
             } else {
-                ui.loginStatusLabel->setText("Incorrect password. Please try again.");
+                ui.loginStatusLabel->setText("Login failed. Please try again.");
             }
         } catch (const std::exception& e) {
-            ui.loginStatusLabel->setText("Login error: " + QString(e.what()));
+            ui.loginStatusLabel->setText(QString::fromStdString(e.what()));
         }
     });
 

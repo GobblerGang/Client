@@ -4,6 +4,7 @@
 #include "models/KEKModel.h"
 #include <chrono>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 KEKModel KekService::encrypt_kek(const std::vector<uint8_t>& kek,

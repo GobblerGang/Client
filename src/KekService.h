@@ -15,12 +15,6 @@ public:
     // #Function with const reference parameters returning pair
     static std::pair<std::vector<uint8_t>, std::vector<uint8_t>> decrypt_kek(const KEKModel& kek_model, const std::vector<uint8_t>& master_key, const std::string& user_uuid);
 
-    // #Function with const reference parameters
-    static std::string get_current_iso8601_utc();
-
-    // #Function with const reference parameters
-    static std::vector<uint8_t> format_aad(const std::string& user_uuid, const std::string& timestamp);
-
 private:
     static std::string get_current_iso8601_utc();
     static std::vector<uint8_t> format_aad(const std::string& user_uuid, const std::string& timestamp);

@@ -154,7 +154,7 @@ std::string Server::get_server_nonce(const std::string &user_uuid) {
 }
 
 KEKModel Server::get_kek_info(const std::string& user_uuid) {
-    HttpResponse resp = get_request(server_url_ + "/api/kek?user_uuid=" + user_uuid);
+    HttpResponse resp = get_request(server_url_ + "/api/kek/" + user_uuid);
     if (!resp.success) {
         throw std::runtime_error("Failed to get kek: " + resp.body);
     }
@@ -166,11 +166,9 @@ KEKModel Server::get_kek_info(const std::string& user_uuid) {
         if (json_response.contains("uuid") && json_response.contains("user_uuid") &&
             json_response.contains("enc_kek_cyphertext") && json_response.contains("nonce") && json_response.contains("updated_at")) {
             KEKModel kek_model;
-            kek_model.id = json_response["id"].get<int>();
             kek_model.enc_kek_cyphertext = json_response["enc_kek_cyphertext"].get<std::string>();
             kek_model.nonce = json_response["nonce"].get<std::string>();
             kek_model.updated_at = json_response["updated_at"].get<std::string>();
-            kek_model.user_id = json_response["user_id"].get<int>();
             return kek_model;
             } else {
                 throw std::runtime_error("One or many KEK attributes not found in response");
@@ -193,6 +191,39 @@ nlohmann::json Server::update_kek_info(const std::string &encrypted_kek,
 
     HttpResponse resp = put_request(server_url_ + "/api/kek?user_uuid=" + user_uuid, payload, headers);
     return parse_and_check_response(resp, "update_kek_info");
+}
+
+// src/Server.cpp
+
+UserModel Server::get_user_by_name(const std::string& username) {
+    // Make GET request to server endpoint
+    HttpResponse resp = get_request(server_url_ + "/api/users/" + username);
+    if (!resp.success) {
+        throw std::runtime_error("Failed to get user by username: " + resp.body);
+    }
+    if (resp.body.empty()) {
+        throw std::runtime_error("Received empty response for get user by username");
+    }
+
+    // Parse response
+    nlohmann::json response_json = nlohmann::json::parse(resp.body); // Use resp.body instead of resp
+    if (!response_json.contains("user")) {
+        return UserModel();
+    }
+
+    // Convert JSON to UserModel
+    UserModel user;
+    user.uuid = response_json["user"]["uuid"];
+    user.username = response_json["user"]["username"];
+    user.email = response_json["user"]["email"];
+    user.salt = response_json["user"]["salt"];
+    user.ed25519_identity_key_public = response_json["user"]["ed25519_identity_key_public"];
+    user.x25519_identity_key_public = response_json["user"]["x25519_identity_key_public"];
+    user.signed_prekey_public = response_json["user"]["signed_prekey_public"];
+    user.signed_prekey_signature = response_json["user"]["signed_prekey_signature"];
+    user.opks_json = response_json["user"]["opks"].dump();
+
+    return user;
 }
 //TODO
 // std::pair<nlohmann::json, std::string> Server::get_user_by_name(const std::string &username) {

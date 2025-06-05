@@ -5,10 +5,11 @@
 #ifndef USERMODELORM_H
 #define USERMODELORM_H
 #include <string>
-
 struct UserModel;
 
 // Flat struct for ORM (Object-Relational Mapping)
+struct UserModel;
+// Flat struct for ORM
 struct UserModelORM {
     // #Member Variables
     int id;
@@ -28,10 +29,10 @@ struct UserModelORM {
     std::string signed_prekey_private_nonce;
     std::string opks_json;
 
+    UserModelORM& operator=(const UserModel& user);
     // #Assignment Operator Overload (call by const reference, returns by reference)
     // Copies data from UserModel to this UserModelORM instance
     // Uses this pointer to refer to the current object
-    UserModelORM& operator=(const UserModel& user);
 };
 
 #endif //USERMODELORM_H

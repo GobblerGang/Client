@@ -3,6 +3,9 @@
 //
 
 #include "UserManager.h"
+
+#include <iostream>
+
 #include "nlohmann/json.hpp"
 #include "utils/cryptography/keys/MasterKey.h"
 #include "Server.h"
@@ -42,7 +45,7 @@ nlohmann::json UserManager::save() {
         throw std::runtime_error("Failed to save user data remotely.");
     }
 
-    user_data.uuid = server_response["user"]["uuid"].get<std::string>();
+    // user_data.uuid = server_response["user"]["uuid"];
 
     nlohmann::json response_json;
     response_json["user"] = {
@@ -95,8 +98,61 @@ void UserManager::load(const std::string& identifier) {
     setUser(UserModel(user));
 }
 
-void UserManager::login(const std::string& username, const std::string& password) {
-    // Implement login logic here
+// In UserManager.cpp
+
+bool UserManager::login(const std::string& username, const std::string& password) {
+    // 1. Lookup user locally
+    auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username));
+    std::cout << username << " " << password << std::endl;
+    if (users.empty()) {
+        auto server_user = Server::instance().get_user_by_name(username);
+        if (server_user.uuid.empty()) {
+            // Not found anywhere
+            throw std::runtime_error("User not found locally or on server.");
+        }
+
+        // Found only on server
+        throw std::runtime_error("User not found locally, but exists on server. Please import your key bundle.");
+    }
+    const auto user = users.front();
+    std::cout << user.id << " " << password << std::endl;
+
+    // 2. Check for empty password
+    if (password.empty()) {
+        throw std::runtime_error("Password is required");
+    }
+    // 2. Use load() to set user_data by UUID
+    load(user.uuid);
+    std::cout << user_data.id << " " << user.id << std::endl;
+    // 3. Get user's vault (assuming vault == user for now)
+    std::string salt_b64 = user.salt;
+    std::vector<uint8_t> salt = CryptoUtils::base64_decode(salt_b64);
+    std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt);
+    MasterKey::instance().set_key(master_key);
+
+    KEKModel remote_kek_info = Server::instance().get_kek_info(user_data.uuid);
+    std::string server_updated_at = remote_kek_info.updated_at;
+
+    KEKModel local_kek_info = get_local_kek(user_data.id);
+    try {
+        check_kek_freshness();
+        auto [kek, aad] = KekService::decrypt_kek(local_kek_info, master_key, user_data.uuid);
+        return true;
+    } catch (const std::exception&) {
+        try {
+            auto [kek, aad] = KekService::decrypt_kek(remote_kek_info, master_key, user_data.uuid);
+
+            if (local_kek_info.updated_at != server_updated_at) {
+                local_kek_info.enc_kek_cyphertext = remote_kek_info.enc_kek_cyphertext;
+                local_kek_info.nonce = remote_kek_info.nonce;
+                local_kek_info.updated_at = server_updated_at;
+                db().update(local_kek_info);
+            }
+            return true;
+        } catch (...) {
+            throw std::runtime_error("password changed or data has been tampered");
+        }
+    }
 }
 
 bool UserManager::signup(const std::string &username, const std::string &email, const std::string &password) {

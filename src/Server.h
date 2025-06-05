@@ -5,10 +5,11 @@
 #include <curl/curl.h>
 #include "RequestHeaders.h"
 #include "models/KEKModel.h"
+#include "models/UserModel.h"
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
-/** 
+/**
  * @brief Struct to hold HTTP response data.
  */
 struct HttpResponse {
@@ -18,7 +19,7 @@ struct HttpResponse {
     CURLcode curl_code;
 };
 
-/** 
+/**
  * @brief Singleton class to manage server interactions.
  * This class provides methods to interact with the server for user management, file uploads, and other operations.
  */
@@ -58,7 +59,7 @@ public:
 
     // #Function Declaration (call by const reference, returns by value)
     // Retrieves user information by username
-    std::pair<nlohmann::json, std::string> get_user_by_name(const std::string& username);
+    UserModel get_user_by_name(const std::string& username);
 
     // #Function Declaration (call by const reference, returns by value)
     // Uploads a file to the server
@@ -71,53 +72,34 @@ public:
                                                        const std::string& k_file_nonce,
                                                        const Ed25519PrivateKey& private_key);
 
-    // #Function Declaration (call by const reference, returns by value)
-    // Retrieves user keys for communication
     std::pair<nlohmann::json, std::string> get_user_keys(const std::string& sender_user_uuid,
                                                          const std::string& recipient_uuid,
                                                          const Ed25519PrivateKey& private_key);
 
-    // #Function Declaration (call by const reference, returns by value)
-    // Sends a PAC (Permission Access Control) to the server
     std::pair<nlohmann::json, std::string> send_pac(const PAC& pac,
                                                     const std::string& sender_uuid,
                                                     const Ed25519PrivateKey& private_key);
 
-    // #Function Declaration (call by const reference, returns by value)
-    // Downloads a file from the server
     std::pair<nlohmann::json, std::string> download_file(const std::string& file_uuid,
                                                          const Ed25519PrivateKey& private_key,
                                                          const std::string& user_uuid);
 
-    // #Function Declaration (call by const reference, returns by value)
-    // Retrieves files owned by the specified user
     std::pair<nlohmann::json, std::string> get_owned_files(const std::string& user_id,
                                                            const Ed25519PrivateKey& private_key);
 
-    // Retrieves PACs for the specified user
     nlohmann::json get_user_pacs(const std::string& user_id,
                                  const Ed25519PrivateKey& private_key);
 
-    // #Function Declaration (call by const reference, returns by value)
-    // Retrieves information about a specific file
     std::pair<nlohmann::json, std::string> get_file_info(const std::string& file_uuid,
                                                          const std::string& user_uuid,
                                                          const Ed25519PrivateKey& private_key);
 
-    // #Function Declaration (returns bool)
-    // Retrieves the server index
     bool get_index();
-
     // Get the server URL
     std::string server_url() const { return server_url_; }
-
 private:
-    // #Private Constructor
-    // Initializes the Server singleton instance
+    // Private constructor to enforce singleton pattern
     Server();
-
-    // #Destructor
-    // Cleans up resources used by the Server instance
     ~Server();
 
     std::string server_url_; // Default server URL
@@ -161,5 +143,6 @@ private:
     // #Function Declaration (call by const reference, returns by value, default argument)
     // Performs the actual HTTP request
     HttpResponse perform_request(const std::string& url, const std::vector<std::string>& headers, const std::string* payload, bool is_post, bool is_put = false);
+
 };
 

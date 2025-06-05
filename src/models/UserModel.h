@@ -4,8 +4,8 @@
 #pragma once
 #include <string>
 #include <models/RemoteUser.h>
+#include <models/UserModelORM.h>
 #include <models/PublicKeys.h>
-#include "UserModelORM.h"
 #ifndef USERMODEL_H
 #define USERMODEL_H
 
@@ -49,6 +49,7 @@ struct UserModel: RemoteUser, PublicKeys {
         this->signed_prekey_private_enc = orm.signed_prekey_private_enc;
         this->signed_prekey_private_nonce = orm.signed_prekey_private_nonce;
         this->opks_json = orm.opks_json;
+        this->id = orm.id;
         return *this;
     }
 
