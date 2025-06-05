@@ -1,9 +1,11 @@
 //
 // Created by Ruairi on 04/06/2025.
 //
+#pragma once
 #include <string>
 #include <models/RemoteUser.h>
 #include <models/PublicKeys.h>
+#include "UserModelORM.h"
 #ifndef USERMODEL_H
 #define USERMODEL_H
 
@@ -28,5 +30,31 @@ struct UserModel: RemoteUser, PublicKeys {
 
     // One-time prekeys as JSON
     std::string opks_json;
+
+    // In UserModel.h, inside struct UserModel
+    UserModel& operator=(const UserModelORM& orm) {
+        id = orm.id;
+        uuid = orm.uuid;
+        username = orm.username;
+        email = orm.email;
+        ed25519_identity_key_public = orm.ed25519_identity_key_public;
+        ed25519_identity_key_private_enc = orm.ed25519_identity_key_private_enc;
+        ed25519_identity_key_private_nonce = orm.ed25519_identity_key_private_nonce;
+        x25519_identity_key_public = orm.x25519_identity_key_public;
+        x25519_identity_key_private_enc = orm.x25519_identity_key_private_enc;
+        x25519_identity_key_private_nonce = orm.x25519_identity_key_private_nonce;
+        salt = orm.salt;
+        signed_prekey_public = orm.signed_prekey_public;
+        signed_prekey_signature = orm.signed_prekey_signature;
+        signed_prekey_private_enc = orm.signed_prekey_private_enc;
+        signed_prekey_private_nonce = orm.signed_prekey_private_nonce;
+        opks_json = orm.opks_json;
+        return *this;
+    }
+    // Explicit makes it so the compiler cant automatically convert UserModelORM to UserModel (stops unwanted conversions)
+    explicit UserModel(const UserModelORM& orm) {
+        *this = orm; // Uses the assignment operator
+    }
+    UserModel() = default; // Default constructor
 };
 #endif //USERMODEL_H
