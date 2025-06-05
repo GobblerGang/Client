@@ -4,17 +4,13 @@
 #include <vector>
 #include <map>
 #include <optional>
-#include "Ed25519Key.h"
-#include "X25519Key.h"
+#include "keys/Ed25519Key.h"
+#include "keys/X25519Key.h"
 #include "models/UserModel.h"
+#include "keys/OPKPair.h"
 
 // Forward declaration to avoid circular dependency
 class CryptoUtils;
-
-struct OPKPair {
-    X25519PrivateKey private_key;
-    X25519PublicKey public_key;
-};
 
 class VaultManager {
     // Declare CryptoUtils as a friend class
@@ -47,13 +43,6 @@ public:
     
     static std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>
     decrypt_all_opks(const std::string& opks_json, const std::vector<uint8_t>& master_key);
-    
-    static std::vector<OPKPair> keypairs_from_opk_bytes(
-        const std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>& decrypted_opks);
-
-    // Make these public so they can be accessed directly
-    static std::string base64_encode(const std::vector<uint8_t>& data);
-    static std::vector<uint8_t> base64_decode(const std::string& input);
 
 private:
     // Private methods if any

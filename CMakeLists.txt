@@ -71,13 +71,19 @@ set(SOURCES
         main.cpp
         UI.cpp
         src/auth.cpp
-        include/utils/CryptoUtils.cpp
-        include/utils/MasterKey.cpp
-        include/utils/VaultManager.cpp
-        include/utils/Ed25519Key.cpp
-        include/utils/X25519Key.cpp
+
+        include/utils/cryptography/CryptoUtils.cpp
+        include/utils/cryptography/3xDH.cpp
+        include/utils/cryptography/VaultManager.cpp
+        include/utils/cryptography/keyGeneration.cpp
+
+        include/utils/cryptography/keys/MasterKey.cpp
+        include/utils/cryptography/keys/Ed25519Key.cpp
+        include/utils/cryptography/keys/X25519Key.cpp
+
         include/utils/dataclasses/PAC.cpp
         include/utils/dataclasses/Vault.cpp
+
         src/UserManager.cpp
         src/UserManager.h
         src/Server.cpp
@@ -88,16 +94,21 @@ set(HEADERS
         include/nlohmann/json.hpp
         include/sqlite_orm/sqlite_orm.h
         include/utils/dataclasses/PAC.h
-        include/utils/CryptoUtils.h
-        include/utils/MasterKey.h
-        include/utils/VaultManager.h
-        include/utils/Ed25519Key.h
-        include/utils/X25519Key.h
+        include/utils/cryptography/CryptoUtils.h
+        include/utils/cryptography/keyGeneration.h
+        include/utils/cryptography/VaultManager.h
+
+        include/utils/cryptography/keys/MasterKey.h
+        include/utils/cryptography/keys/Ed25519Key.h
+        include/utils/cryptography/keys/X25519Key.h
+        include/utils/cryptography/keys/OPKPair.h
+        include/utils/cryptography/3xDH.h
+
         include/database/schema.hpp
         include/database/db_instance.h
         src/auth.h
         include/utils/dataclasses/Vault.h
-        src/models/file.h
+        src/FileManager.h
         src/models/pac.h
         src/models/RemoteUser.h
         src/models/KEKModel.h
@@ -112,6 +123,8 @@ set(HEADERS
         src/KekService.h
         src/kekService.cpp
         include/utils/Config.h
+        include/utils/cryptography/3xDH.h
+        include/utils/cryptography/keys/OPKPair.h
 )
 
 add_executable(CPlusPlusClient ${SOURCES} ${HEADERS})

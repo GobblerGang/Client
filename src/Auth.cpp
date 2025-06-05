@@ -10,10 +10,11 @@
 #include <vector>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
-#include "utils/CryptoUtils.h"
-#include "utils/VaultManager.h"
-#include "utils/Ed25519Key.h"
-#include "utils/X25519Key.h"
+#include "../include/utils/cryptography/CryptoUtils.h"
+#include "../include/utils/cryptography/VaultManager.h"
+#include "../include/utils/cryptography/KeyGeneration.h"
+#include "../include/utils/cryptography/keys/Ed25519Key.h"
+#include "../include/utils/cryptography/keys/X25519Key.h"
 #include "utils/Config.h"
 
 // Add a configurable server URL
@@ -48,7 +49,7 @@ bool send_registration(
             {"uuid", uuid},
             {"username", username},
             {"email", email},
-            {"salt", VaultManager::base64_encode(salt)}
+            {"salt", CryptoUtils::base64_encode(salt)}
         }},
         {"keys", {
             {"identity_key_public", identity_key_public},
@@ -100,18 +101,18 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     }
 
     std::vector<uint8_t> salt = generateSalt();
-    std::vector<uint8_t> masterKey = CryptoUtils::derive_master_key(password, salt);
-    std::vector<uint8_t> kek = CryptoUtils::generate_kek();
+    std::vector<uint8_t> masterKey = KeyGeneration::derive_master_key(password, salt);
+    std::vector<uint8_t> kek = KeyGeneration::generate_kek();
 
     // Generate identity keypairs
-    auto identityKeypairs = CryptoUtils::generate_identity_keypair();
+    auto identityKeypairs = KeyGeneration::generate_identity_keypair();
     Ed25519PrivateKey* ed25519_priv = identityKeypairs.first.first;
     Ed25519PublicKey* ed25519_pub = identityKeypairs.first.second;
     X25519PrivateKey* x25519_priv = identityKeypairs.second.first;
     X25519PublicKey* x25519_pub = identityKeypairs.second.second;
 
     // Generate signed prekey
-    auto spk_tuple = CryptoUtils::generate_signed_prekey(ed25519_priv->to_evp_pkey());
+    auto spk_tuple = KeyGeneration::generate_signed_prekey(ed25519_priv->to_evp_pkey());
     X25519PrivateKey* spk_priv = std::get<0>(spk_tuple);
     X25519PublicKey* spk_pub = std::get<1>(spk_tuple);
     std::vector<uint8_t> spk_sig = std::get<2>(spk_tuple);
@@ -144,8 +145,8 @@ Auth::SignUpResult Auth::signup(const std::string& username, const std::string& 
     std::string kek_nonce_b64, kek_ciphertext_b64;
     try {
         auto [nonce, kek_enc] = CryptoUtils::encrypt_with_key(kek, masterKey, std::vector<uint8_t>(uuid.begin(), uuid.end()));
-        kek_nonce_b64 = VaultManager::base64_encode(nonce);
-        kek_ciphertext_b64 = VaultManager::base64_encode(kek_enc);
+        kek_nonce_b64 = CryptoUtils::base64_encode(nonce);
+        kek_ciphertext_b64 = CryptoUtils::base64_encode(kek_enc);
     } catch (...) {
         // Clean up heap allocations
         delete ed25519_priv;

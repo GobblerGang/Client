@@ -7,7 +7,6 @@
 
 #include <models/UserModel.h>
 #include "RemoteUserManager.h"
-#include "models/KEKModel.h"
 
 // Derived class for managing user data locally
 class UserManager: public RemoteUserManager {
@@ -18,7 +17,7 @@ public:
     void changePassword(const std::string& username, const std::string& password);
 
     void handle_saving_remote_user_data(const nlohmann::json &server_response);
-
+    std::vector<uint8_t> get_decrypted_kek();
 protected:
     void load(const std::string& identifier) override;
     nlohmann::json save() override;

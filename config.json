@@ -1,0 +1,16 @@
+{
+    "server": {
+        "host": "localhost",
+        "port": 5000,
+        "base_url": "http://localhost:5000"
+    },
+    "database": {
+        "path": "database.sqlite"
+    },
+    "security": {
+        "key_size": 32,
+        "iv_size": 12,
+        "tag_size": 16
+    }
+
+} 
