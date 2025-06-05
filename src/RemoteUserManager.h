@@ -19,7 +19,7 @@ public:
 protected:
     // Setters use reference args to avoid slicing
     // and set the pointers to the remote user, keys, and KEK data
-    void setUser(std::shared_ptr<const RemoteUser> user) { user_remote_ptr = std::move(user); }
+    void setRemoteUser(std::shared_ptr<const RemoteUser> user) { user_remote_ptr = std::move(user); }
     void setKeys(std::shared_ptr<const PublicKeys> keys) { keys_remote_ptr = std::move(keys); }
     void setKEK(std::shared_ptr<const KEKModel> kek) { kek_data_ptr = std::move(kek); }
     const KEKModel& getKEK() const { return *kek_data_ptr; }

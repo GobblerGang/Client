@@ -19,7 +19,7 @@ UserManager::UserManager() {
 }
 
 nlohmann::json UserManager::save() {
-    setUser(std::make_shared<const UserModel>(user_data));
+    setRemoteUser(std::make_shared<const UserModel>(user_data));
     setKeys(std::make_shared<const UserModel>(user_data));
 
     nlohmann::json server_response = RemoteUserManager::save();
@@ -102,8 +102,8 @@ bool UserManager::signup(const std::string &username, const std::string &email, 
     const IdentityKeyPairs identity_keys = KeyGeneration::generate_identity_keypair();
     const SignedPreKey signed_prekey = KeyGeneration::generate_signed_prekey(identity_keys.ed25519_private->to_evp_pkey());
     std::vector<OPKPair> opks;
-    VaultManager vault_manager = VaultManager();
-    vault_manager.generate_user_vault(
+    // VaultManager vault_manager = VaultManager();
+    VaultManager::generate_user_vault(
         kek_bytes,
         opks,
         this->user_data,
