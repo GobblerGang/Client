@@ -110,23 +110,27 @@ std::map<std::string, std::string> VaultManager::generate_user_vault(
     const std::vector<OPKPair>& opks) {
 
     // Encrypt Ed25519 identity key
-    auto [ed25519_ik_nonce, ed25519_ik_enc] = CryptoUtils::encrypt_with_key(
-        ed25519_identity_private.to_bytes(), master_key, ed25519_identity_associated_data);
+    std::vector<uint8_t> ed25519_ik_nonce;
+    auto ed25519_ik_enc = CryptoUtils::encrypt_with_key(
+        ed25519_identity_private.to_bytes(), master_key, ed25519_ik_nonce, ed25519_identity_associated_data);
     
     // Encrypt X25519 identity key
-    auto [x25519_ik_nonce, x25519_ik_enc] = CryptoUtils::encrypt_with_key(
-        x25519_identity_private.to_bytes(), master_key, x25519_identity_associated_data);
+    std::vector<uint8_t> x25519_ik_nonce;
+    auto x25519_ik_enc = CryptoUtils::encrypt_with_key(
+        x25519_identity_private.to_bytes(), master_key, x25519_ik_nonce, x25519_identity_associated_data);
     
     // Encrypt signed prekey
-    auto [spk_nonce, spk_enc] = CryptoUtils::encrypt_with_key(
-        spk_private.to_bytes(), master_key, spk_associated_data);
+    std::vector<uint8_t> spk_nonce;
+    auto spk_enc = CryptoUtils::encrypt_with_key(
+        spk_private.to_bytes(), master_key, spk_nonce, spk_associated_data);
 
     // Encrypt one-time prekeys
     json opks_json_list = json::array();
     for (const auto& opk : opks) {
         std::string opk_pub_base64 = CryptoUtils::base64_encode(opk.public_key.to_bytes());
-        auto [opk_nonce, opk_enc] = CryptoUtils::encrypt_with_key(
-            opk.private_key.to_bytes(), master_key, opk_associated_data);
+        std::vector<uint8_t> opk_nonce;
+        auto opk_enc = CryptoUtils::encrypt_with_key(
+            opk.private_key.to_bytes(), master_key, opk_nonce, opk_associated_data);
 
         opks_json_list.push_back({
             {"public", opk_pub_base64},
