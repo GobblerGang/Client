@@ -19,8 +19,17 @@ UserManager::UserManager() {
 }
 
 nlohmann::json UserManager::save() {
-    setUser(std::make_shared<const UserModel>(user_data));
-    setKeys(std::make_shared<const UserModel>(user_data));
+    setUser(user_data);
+    
+    // Create PublicKeys object from UserModel
+    PublicKeys keys;
+    keys.ed25519_identity_key_public = user_data.ed25519_identity_key_public;
+    keys.x25519_identity_key_public = user_data.x25519_identity_key_public;
+    keys.signed_prekey_public = user_data.signed_prekey_public;
+    keys.signed_prekey_signature = user_data.signed_prekey_signature;
+    keys.opks = user_data.opks;
+    
+    setKeys(std::make_shared<const PublicKeys>(keys));
 
     nlohmann::json server_response = RemoteUserManager::save();
     // handle_saving_remote_user_data();

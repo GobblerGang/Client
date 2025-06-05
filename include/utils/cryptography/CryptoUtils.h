@@ -4,6 +4,7 @@
 #include <vector>
 #include <optional>
 #include <nlohmann/json.hpp>
+#include <openssl/rand.h>
 #include "../dataclasses/PAC.h"
 #include "keys/Ed25519Key.h"
 #include "keys/X25519Key.h"
@@ -13,7 +14,7 @@ class VaultManager;
 class CryptoUtils {
     friend class VaultManager;
 public:
-    static inline std::vector<uint8_t> CryptoUtils::generate_nonce(const std::size_t size) {
+    static inline std::vector<uint8_t> generate_nonce(const std::size_t size) {
         std::vector<uint8_t> nonce(size);
         if (RAND_bytes(nonce.data(), static_cast<int>(size)) != 1) {
             throw std::runtime_error("Failed to generate secure nonce");
