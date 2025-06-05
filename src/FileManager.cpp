@@ -74,8 +74,7 @@ void FileManager::uploadFile(const std::vector<uint8_t>& fileBytes,
                            const std::string& fileName) {
     try {
         // 1. Create File struct and set file name
-        data_.file_name = fileName;
-        std::cout << "File name: " << fileName << std::endl;
+        std::cout << "File name: " << fileBytes.size() << std::endl;
         // 2. Encrypt the file
         encrypt(fileBytes, mimeType);
 
