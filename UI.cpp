@@ -163,6 +163,7 @@ void MainWindowUI::setupFileTab() {
     QHBoxLayout* buttonsLayout = new QHBoxLayout();
     buttonsLayout->setSpacing(15);
 
+    //new keyword (heap allocation)
     uploadButton = new QPushButton("Upload");
     downloadButton = new QPushButton("Download");
     shareButton = new QPushButton("Share");
