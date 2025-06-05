@@ -1,6 +1,6 @@
 #include "KekService.h"
-#include "../include/utils/cryptography/CryptoUtils.h"
-#include "../include/utils/cryptography/VaultManager.h"
+#include "utils/cryptography/CryptoUtils.h"
+#include "utils/cryptography/VaultManager.h"
 #include "models/KEKModel.h"
 #include <chrono>
 #include <iomanip>
@@ -22,6 +22,21 @@ KEKModel KekService::encrypt_kek(const std::vector<uint8_t>& kek,
 
     return kek_model;
 }
+
+std::pair<std::vector<uint8_t>, std::vector<uint8_t>> KekService::decrypt_kek(
+    const KEKModel& kek_model,
+    const std::vector<uint8_t>& master_key,
+    const std::string& user_uuid) {
+
+    std::vector<uint8_t> ciphertext = CryptoUtils::base64_decode(kek_model.enc_kek_cyphertext);
+    std::vector<uint8_t> nonce = CryptoUtils::base64_decode(kek_model.nonce);
+    std::vector<uint8_t> aad = format_aad(user_uuid, kek_model.updated_at);
+
+    std::vector<uint8_t> decrypted_kek = CryptoUtils::decrypt_with_key(nonce, ciphertext, master_key, aad);
+
+    return std::make_pair(decrypted_kek, aad);
+}
+
 
 std::vector<uint8_t> KekService::format_aad(const std::string& user_uuid, const std::string& timestamp) {
     std::string aad_str = user_uuid + ":" + timestamp;

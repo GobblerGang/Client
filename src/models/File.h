@@ -4,7 +4,7 @@
 #include <string>
 
 
-struct FileData {
+struct File {
     std::string file_name;
     std::string enc_file_ciphertext;  // base64 encoded
     std::string mime_type;

@@ -4,6 +4,7 @@
 
 #include "UserManager.h"
 #include "nlohmann/json.hpp"
+#include "utils/cryptography/keys/MasterKey.h"
 
 UserManager::UserManager() {
     user_data = UserModel();
@@ -51,3 +52,8 @@ void UserManager::handle_saving_remote_user_data(const nlohmann::json& server_re
         throw std::runtime_error("Error saving remote user data: " + server_response["error"].get<std::string>());
     }
 }
+
+std::vector<uint8_t> get_decrypted_kek() {
+    // MasterKey& master_key = MasterKey::instance();
+    // str:: string user_uuid = user_data.uuid;
+};

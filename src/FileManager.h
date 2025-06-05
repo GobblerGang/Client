@@ -2,27 +2,25 @@
 #define FILE_H
 
 #include "DataManager.h"
-#include "models/FileData.h"
+#include "models/File.h"
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
 #include <optional>
-#include "../include/utils/cryptography/CryptoUtils.h"
-#include "models/KEKModel.h"
-#include "RemoteUserManager.h"
+#include "utils/cryptography/CryptoUtils.h"
 
 
-class File : public DataManager {
+class FileManager : public DataManager {
 public:
-    File() = default;
-    explicit File(const FileData& data);
-    ~File() override = default;
+    FileManager() = default;
+    explicit FileManager(const File& data);
+    ~FileManager() override = default;
 
     // Getters
-    const FileData& getData() const { return data_; }
+    const File& getData() const { return data_; }
     
     // Setters
-    void setData(const FileData& data) { data_ = data; }
+    void setData(const File& data) { data_ = data; }
 
     // File operations
     void encrypt(const std::vector<uint8_t>& file_content, const std::string& mime_type);
@@ -37,7 +35,7 @@ protected:
     void load(const std::string& identifier) override;
 
 private:
-    FileData data_;
+    File data_;
     
     // Helper functions for encryption
     std::pair<std::vector<uint8_t>, std::vector<uint8_t>> encryptWithKey(
@@ -52,9 +50,6 @@ private:
         const std::vector<uint8_t>& key,
         const std::optional<std::vector<uint8_t>>& associated_data = std::nullopt
     ) const;
-
-    // KEK operations
-    std::vector<uint8_t> getDecryptedKEK() const;
 };
 
 #endif // FILE_H

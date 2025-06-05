@@ -16,7 +16,7 @@ public:
         std::pair<X25519PrivateKey*, X25519PublicKey*>
     > generate_identity_keypair();
 
-    static std::vector<uint8_t> generate_kek();
+    static std::vector<uint8_t> generate_symmetric_key();
 
     static std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>>
     generate_signed_prekey(EVP_PKEY *identity_key);

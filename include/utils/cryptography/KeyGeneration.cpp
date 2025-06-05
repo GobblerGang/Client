@@ -73,7 +73,7 @@ std::pair<
     };
 }
 
-std::vector<uint8_t> KeyGeneration::generate_kek() {
+std::vector<uint8_t> KeyGeneration::generate_symmetric_key() {
     std::vector<uint8_t> kek(32);
     if (RAND_bytes(kek.data(), kek.size()) != 1) {
         throw std::runtime_error("Failed to generate KEK");
