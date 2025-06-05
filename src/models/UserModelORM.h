@@ -7,7 +7,7 @@
 #include <string>
 
 #include "UserModel.h"
-
+struct UserModel;
 // Flat struct for ORM
 struct UserModelORM {
     int id;

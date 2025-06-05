@@ -8,7 +8,7 @@
 #include "UserModelORM.h"
 #ifndef USERMODEL_H
 #define USERMODEL_H
-
+struct UserModelORM;
 // This struct is used for local user data storage.
 // i.e. during runtime the logged-in user data is stored here.
 struct UserModel: RemoteUser, PublicKeys {

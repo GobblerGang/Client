@@ -107,7 +107,7 @@ bool UserManager::login(const std::string& username, const std::string& password
         // Found only on server
         throw std::runtime_error("User not found locally, but exists on server. Please import your key bundle.");
     }
-    UserModel user = users.front();
+    const UserModel& user = users.front();
 
     // 2. Check for empty password
     if (password.empty()) {
@@ -119,9 +119,6 @@ bool UserManager::login(const std::string& username, const std::string& password
     // 3. Get user's vault (assuming vault == user for now)
     std::string salt_b64 = user.salt;
     std::vector<uint8_t> salt = CryptoUtils::base64_decode(salt_b64);
-
-
-    std::vector<uint8_t> salt = CryptoUtils::base64_decode(user_data.salt);
     std::vector<uint8_t> master_key = MasterKey::instance().derive_key(password, salt);
     MasterKey::instance().set_key(master_key);
 

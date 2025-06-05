@@ -14,7 +14,7 @@ class CryptoUtils {
     friend class VaultManager;
 public:
     // inline is here only for searchability. this functions is inlined implicitly as it is defined fully in header
-    static inline std::vector<uint8_t> CryptoUtils::generate_nonce(const std::size_t size) {
+    static std::vector<uint8_t> CryptoUtils::generate_nonce(const std::size_t size) {
         std::vector<uint8_t> nonce(size);
         if (RAND_bytes(nonce.data(), static_cast<int>(size)) != 1) {
             throw std::runtime_error("Failed to generate secure nonce");
