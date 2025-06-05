@@ -155,7 +155,7 @@ KEKModel Server::get_kek_info(const std::string& user_uuid) {
             kek_model.user_id = json_response["user_id"].get<int>();
             return kek_model;
             } else {
-                throw std::runtime_error("Nonce or timestamp not found in response");
+                throw std::runtime_error("One or many KEK attributes not found in response");
             }
     } catch (const nlohmann::json::exception& e) {
         throw std::runtime_error("Failed to parse JSON response: " + std::string(e.what()));

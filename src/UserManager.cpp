@@ -137,4 +137,15 @@ std::vector<uint8_t> UserManager::get_decrypted_kek() const {
     auto [decrypted_kek, _aad] = KekService::decrypt_kek(kek_model, master_key, user_uuid);
 
     return decrypted_kek;
+}
+
+bool UserManager::checkKek() {
+    Server& server = Server::instance();
+    auto user_uuid = user_data.uuid;
+    KEKModel kek_model = server.get_kek_info(user_uuid);
+    const std::vector<uint8_t>& master_key = MasterKey::instance().get();
+
+
 };
+
+

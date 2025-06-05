@@ -16,7 +16,7 @@ public:
 
     bool signup(const std::string &username, const std::string &email, const std::string &password);
     void changePassword(const std::string& username, const std::string& password);
-
+    bool checkKek();
     void handle_saving_remote_user_data();
     std::vector<uint8_t> get_decrypted_kek() const;
 protected:
