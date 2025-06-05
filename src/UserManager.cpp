@@ -139,13 +139,13 @@ std::vector<uint8_t> UserManager::get_decrypted_kek() const {
     return decrypted_kek;
 }
 
-bool UserManager::checkKek() {
-    Server& server = Server::instance();
-    auto user_uuid = user_data.uuid;
-    KEKModel kek_model = server.get_kek_info(user_uuid);
-    const std::vector<uint8_t>& master_key = MasterKey::instance().get();
-
-
-};
+// bool UserManager::checkKek() {
+//     Server& server = Server::instance();
+//     auto user_uuid = user_data.uuid;
+//     KEKModel kek_model = server.get_kek_info(user_uuid);
+//     const std::vector<uint8_t>& master_key = MasterKey::instance().get();
+//
+//
+// };
 
 
