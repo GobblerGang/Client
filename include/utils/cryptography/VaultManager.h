@@ -4,8 +4,8 @@
 #include <vector>
 #include <map>
 #include <optional>
-#include "Ed25519Key.h"
-#include "X25519Key.h"
+#include "keys/Ed25519Key.h"
+#include "keys/X25519Key.h"
 #include "models/UserModel.h"
 
 // Forward declaration to avoid circular dependency

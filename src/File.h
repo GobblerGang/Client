@@ -1,13 +1,13 @@
 #ifndef FILE_H
 #define FILE_H
 
-#include "../DataManager.h"
-#include "FileData.h"
+#include "DataManager.h"
+#include "models/FileData.h"
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
 #include <optional>
-#include "utils/CryptoUtils.h"
+#include "../include/utils/cryptography/CryptoUtils.h"
 #include "models/KEKModel.h"
 #include "RemoteUserManager.h"
 

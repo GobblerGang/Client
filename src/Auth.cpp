@@ -10,10 +10,10 @@
 #include <vector>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
-#include "utils/CryptoUtils.h"
-#include "utils/VaultManager.h"
-#include "utils/Ed25519Key.h"
-#include "utils/X25519Key.h"
+#include "../include/utils/cryptography/CryptoUtils.h"
+#include "../include/utils/cryptography/VaultManager.h"
+#include "../include/utils/cryptography/keys/Ed25519Key.h"
+#include "../include/utils/cryptography/keys/X25519Key.h"
 #include "utils/Config.h"
 
 // Add a configurable server URL

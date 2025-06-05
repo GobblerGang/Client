@@ -1,5 +1,5 @@
 #include "File.h"
-#include "utils/VaultManager.h"
+#include "../include/utils/cryptography/VaultManager.h"
 #include "utils/MasterKey.h"
 #include <stdexcept>
 

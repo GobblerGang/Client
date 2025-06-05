@@ -1,4 +1,4 @@
-#include "VaultManager.h"
+#include "../VaultManager.h"
 #include "CryptoUtils.h"
 #include <openssl/bio.h>
 #include <openssl/evp.h>
@@ -9,7 +9,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include "Ed25519Key.h"
+#include "keys/Ed25519Key.h"
 
 
 using json = nlohmann::json;

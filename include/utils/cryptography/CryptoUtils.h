@@ -4,9 +4,9 @@
 #include <vector>
 #include <optional>
 #include <nlohmann/json.hpp>
-#include "dataclasses/PAC.h"
-#include "Ed25519Key.h"
-#include "X25519Key.h"
+#include "../dataclasses/PAC.h"
+#include "keys/Ed25519Key.h"
+#include "keys/X25519Key.h"
 
 class VaultManager;
 
@@ -30,21 +30,7 @@ public:
     static std::tuple<X25519PrivateKey *, X25519PublicKey *, std::vector<uint8_t>>
     generate_signed_prekey(EVP_PKEY *identity_key); // X25519 + signature
 
-    static std::vector<uint8_t> perform_3xdh_sender(
-        EVP_PKEY* identity_private,
-        EVP_PKEY* ephemeral_private,
-        EVP_PKEY* recipient_identity_public,
-        EVP_PKEY* recipient_signed_prekey_public,
-        EVP_PKEY* recipient_one_time_prekey_public = nullptr
-    );
-
-    static std::vector<uint8_t> perform_3xdh_recipient(
-        EVP_PKEY* identity_private,
-        EVP_PKEY* signed_prekey_private,
-        EVP_PKEY* sender_identity_public,
-        EVP_PKEY* sender_ephemeral_public,
-        EVP_PKEY* one_time_prekey_private = nullptr
-    );
+    // 3XDH functions moved to ThreeXDH.h
 
     static PAC create_pac(
     const std::string &file_id,

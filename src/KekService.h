@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <utility>  // for std::pair
-#include "utils/CryptoUtils.h"
+#include "../include/utils/cryptography/CryptoUtils.h"
 #include "models/KEKModel.h"
 
 class KekService {

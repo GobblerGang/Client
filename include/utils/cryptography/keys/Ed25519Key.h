@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <openssl/evp.h>
-#include <stdexcept>
 
 class Ed25519PrivateKey {
 public:

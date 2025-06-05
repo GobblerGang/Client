@@ -1,6 +1,6 @@
 #include "KekService.h"
-#include "utils/CryptoUtils.h"
-#include "utils/VaultManager.h"
+#include "../include/utils/cryptography/CryptoUtils.h"
+#include "../include/utils/cryptography/VaultManager.h"
 #include "models/KEKModel.h"
 #include <chrono>
 #include <iomanip>
