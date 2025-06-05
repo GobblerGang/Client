@@ -7,7 +7,6 @@
 #include "utils/cryptography/keys/MasterKey.h"
 #include "Server.h"
 #include <utils/cryptography/CryptoUtils.h>
-
 #include "KekService.h"
 #include "utils/cryptography/KeyGeneration.h"
 
@@ -51,8 +50,9 @@ void UserManager::signup(const std::string& username, const std::string& email, 
     MasterKey::instance().set_key(master_key);
     user_data.uuid = Server::instance().get_new_user_uuid();
     //generate and encrpyt KEK with master key
+    std::vector<uint8_t> kek_bytes = KeyGeneration::generate_symmetric_key();
     KEKModel kek_data = KekService::encrypt_kek(
-        KeyGeneration::generate_symmetric_key(),
+        kek_bytes,
         master_key,
         user_data.uuid,
         -1 // Placeholder for user ID, should be set after saving user data
@@ -62,6 +62,8 @@ void UserManager::signup(const std::string& username, const std::string& email, 
     //TODO generate and encrypt user keys with kek
     auto identity_keys = KeyGeneration::generate_identity_keypair();
 
+    //TODO generate and encrpyt KEK with master key
+    //TODO generate and encrypt user keys with master key
 }
 
 void UserManager::changePassword(const std::string& username, const std::string& password) {
