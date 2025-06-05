@@ -15,9 +15,10 @@
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     int argc = 0;
     char **argv = nullptr;
+}
 #else
 #endif
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]){
     // #Reference to Singleton
     Server& server = Server::instance();
 
