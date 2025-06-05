@@ -3,6 +3,7 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include <curl/curl.h>
+#include "RequestHeaders.h"
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
@@ -133,7 +134,7 @@ private:
 
     std::string sign_payload(const std::vector<uint8_t>& payload, const std::string& nonce, const Ed25519PrivateKey& private_key);
 
-    std::vector<std::string> set_headers(const Ed25519PrivateKey& private_key, const std::string& user_uuid, const nlohmann::json& payload);
+    RequestHeaders set_headers(const Ed25519PrivateKey& private_key, const std::string& user_uuid, const nlohmann::json& payload);
 
     /**
      * @brief Performs a request to the specified URL with the given payload.

@@ -205,7 +205,7 @@ std::string Server::sign_payload(
     return CryptoUtils::base64_encode(signature);
 }
 
-std::vector<std::string> Server::set_headers(
+RequestHeaders Server::set_headers(
     const Ed25519PrivateKey& private_key,
     const std::string& user_uuid,
     const nlohmann::json& payload
@@ -221,11 +221,7 @@ std::vector<std::string> Server::set_headers(
     }
 
     std::string signature = sign_payload(payload_bytes, nonce, private_key);
-
-    return {
-        "X-User-UUID: " + user_uuid,
-        "X-Nonce: " + nonce,
-        "X-Signature: " + signature
-    };
+    RequestHeaders request_headers = {user_uuid, nonce, signature};
+    return request_headers;
 }
 
