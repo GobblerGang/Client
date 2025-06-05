@@ -9,6 +9,8 @@
 #include <iomanip>
 #include "CryptoUtils.h"
 
+#include <iostream>
+
 std::vector<uint8_t> CryptoUtils::encrypt_with_key(
     const std::vector<uint8_t>& plaintext,
     const std::vector<uint8_t>& key,

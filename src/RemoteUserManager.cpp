@@ -19,7 +19,7 @@ nlohmann::json RemoteUserManager::save() {
     if (!user_remote_ptr || !keys_remote_ptr || !kek_data_ptr) {
         throw std::runtime_error("RemoteUserManager: User, keys, or KEK data not set.");
     }
-    std::string user_uuid = Server::instance().get_new_user_uuid();
+    // std::string user_uuid = Server::instance().get_new_user_uuid();
 
     // std::cout << "RemoteUserManager: Saving user with UUID: " << user_uuid << std::endl;
     // std::cout << "RemoteUserManager: User data: " << user_remote_ptr->username << ", " << user_remote_ptr->email << std::endl;
@@ -32,7 +32,7 @@ nlohmann::json RemoteUserManager::save() {
 
     nlohmann::json j;
     j["user"] = {
-        {"uuid", user_uuid},
+        {"uuid", user_remote_ptr->uuid},
         {"username", user_remote_ptr->username},
         {"email", user_remote_ptr->email},
         {"salt", user_remote_ptr->salt}

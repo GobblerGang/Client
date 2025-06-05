@@ -3,6 +3,9 @@
 //
 
 #include "UserManager.h"
+
+#include <iostream>
+
 #include "nlohmann/json.hpp"
 #include "utils/cryptography/keys/MasterKey.h"
 #include "Server.h"
@@ -38,7 +41,7 @@ nlohmann::json UserManager::save() {
         throw std::runtime_error("Failed to save user data remotely.");
     }
 
-    user_data.uuid = server_response["user"]["uuid"].get<std::string>();
+    // user_data.uuid = server_response["user"]["uuid"];
 
     nlohmann::json response_json;
     response_json["user"] = {
