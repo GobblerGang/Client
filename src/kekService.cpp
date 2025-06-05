@@ -9,14 +9,16 @@
 KEKModel KekService::encrypt_kek(const std::vector<uint8_t>& kek,
                                    const std::vector<uint8_t>& master_key,
                                    const std::string& user_uuid,
-                                   int user_id) {
-    std::string timestamp = get_current_iso8601_utc();
+                                   const int user_id) {
+    const std::string timestamp = get_current_iso8601_utc();
     std::vector<uint8_t> aad = format_aad(user_uuid, timestamp);
-    auto [nonce, ciphertext] = CryptoUtils::encrypt_with_key(kek, master_key, aad);
+    // Passing nonce by
+    std::vector<uint8_t> kek_nonce;
+    const auto ciphertext = CryptoUtils::encrypt_with_key(kek, master_key, aad, kek_nonce);
 
     KEKModel kek_model;
     kek_model.enc_kek_cyphertext = CryptoUtils::base64_encode(ciphertext);
-    kek_model.nonce = CryptoUtils::base64_encode(nonce);
+    kek_model.nonce = CryptoUtils::base64_encode(kek_nonce);
     kek_model.updated_at = timestamp;
     kek_model.user_id = user_id;
 
@@ -39,17 +41,22 @@ std::pair<std::vector<uint8_t>, std::vector<uint8_t>> KekService::decrypt_kek(
 
 
 std::vector<uint8_t> KekService::format_aad(const std::string& user_uuid, const std::string& timestamp) {
-    std::string aad_str = user_uuid + ":" + timestamp;
-    return std::vector<uint8_t>(aad_str.begin(), aad_str.end());
+    const nlohmann::json aad_json = {{"user_uuid", user_uuid}, {"timestamp", timestamp}};
+    std::string aad_str = aad_json.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+    return {aad_str.begin(), aad_str.end()};
 }
 
 std::string KekService::get_current_iso8601_utc() {
     auto now = std::chrono::system_clock::now();
-    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-    std::tm utc_tm = *gmtime(&now_time);
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    auto now_us = duration_cast<std::chrono::microseconds>(now.time_since_epoch()) % 1000000;
+
+    std::tm utc_tm = *gmtime(&now_time_t);
 
     std::ostringstream oss;
-    oss << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%SZ");
+    oss << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%S");
+    oss << '.' << std::setw(6) << std::setfill('0') << now_us.count();
+    oss << "+00:00";
     return oss.str();
 }
 

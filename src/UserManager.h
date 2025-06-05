@@ -9,14 +9,14 @@
 #include "RemoteUserManager.h"
 
 // Derived class for managing user data locally
-class UserManager: public RemoteUserManager {
+class UserManager: RemoteUserManager {
 public:
     UserManager();
     void login(const std::string& username, const std::string& password);
     void signup(const std::string& username, const std::string& email, const std::string& password);
     void changePassword(const std::string& username, const std::string& password);
 
-    void handle_saving_remote_user_data(const nlohmann::json &server_response);
+    void handle_saving_remote_user_data();
     std::vector<uint8_t> get_decrypted_kek();
 protected:
     void load(const std::string& identifier) override;

@@ -1,4 +1,6 @@
 #include "Ed25519Key.h"
+
+#include <stdexcept>
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
