@@ -12,6 +12,10 @@ RemoteUserManager::RemoteUserManager() {
     // TODO: implement constructor
 }
 
+RemoteUserManager::~RemoteUserManager() {
+
+}
+
 nlohmann::json RemoteUserManager::save() {
     // TODO: implement save logic
     // This should serialize user_data and keys_data to a string format (e.g., JSON)

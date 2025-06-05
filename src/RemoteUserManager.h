@@ -17,11 +17,9 @@ public:
     // #Default Constructor
     // Initializes a new RemoteUserManager instance
     RemoteUserManager();
-
-    // #Virtual Destructor
+     // #Virtual Destructor
     // Ensures proper cleanup of RemoteUserManager resources
-    virtual ~RemoteUserManager() override = default;
-
+    virtual ~RemoteUserManager() override;
 protected:
     // Setters use reference args to avoid slicing
     // and set the pointers to the remote user, keys, and KEK data
