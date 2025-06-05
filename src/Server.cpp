@@ -194,6 +194,38 @@ nlohmann::json Server::update_kek_info(const std::string &encrypted_kek,
     HttpResponse resp = put_request(server_url_ + "/api/kek?user_uuid=" + user_uuid, payload, headers);
     return parse_and_check_response(resp, "update_kek_info");
 }
+
+// src/Server.cpp
+
+UserModel Server::get_user_by_name(const std::string& username) {
+    // Create JSON payload
+    nlohmann::json request_data = {
+        {"username", username}
+    };
+
+    // Make GET request to server endpoint
+    std::string response = http_client.get("/users/username/" + username);
+    if (response.empty()) {
+        return UserModel(); // Return empty user model
+    }
+
+    // Parse response
+    nlohmann::json response_json = nlohmann::json::parse(response);
+    if (!response_json.contains("user")) {
+        return UserModel();
+    }
+
+    // Convert JSON to UserModel
+    UserModel user;
+    user.uuid = response_json["user"]["uuid"];
+    user.username = response_json["user"]["username"];
+    user.email = response_json["user"]["email"];
+    user.salt = response_json["user"]["salt"];
+    user.created_at = response_json["user"]["created_at"];
+    user.updated_at = response_json["user"]["updated_at"];
+
+    return user;
+}
 //TODO
 // std::pair<nlohmann::json, std::string> Server::get_user_by_name(const std::string &username) {
 // }

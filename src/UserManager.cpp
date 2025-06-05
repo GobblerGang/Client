@@ -95,7 +95,7 @@ void UserManager::load(const std::string& identifier) {
 
 bool UserManager::login(const std::string& username, const std::string& password) {
     // 1. Lookup user locally
-    auto users = db().get_all<UserModel>(where(c(&UserModel::username) == username));
+    auto users = db().get_all<UserModelORM>(where(c(&UserModelORM::username) == username));
 
     if (users.empty()) {
         auto server_user = Server::instance().get_user_by_name(username);
@@ -107,7 +107,7 @@ bool UserManager::login(const std::string& username, const std::string& password
         // Found only on server
         throw std::runtime_error("User not found locally, but exists on server. Please import your key bundle.");
     }
-    const UserModel& user = users.front();
+    const auto user = users.front();
 
     // 2. Check for empty password
     if (password.empty()) {
