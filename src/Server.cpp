@@ -157,8 +157,11 @@ void Server::create_user(const nlohmann::json &user_data) {
     std::string payload = user_data.dump();
     const HttpResponse resp = post_request(server_url_ + "/api/register", nlohmann::json::parse(payload));
     if (!resp.success) {
-        if (user_data["error"]) {
-            throw std::runtime_error("Error creating user: " + user_data["error"].get<std::string>());
+        const nlohmann::json json_body = nlohmann::json::parse(resp.body, nullptr, false);
+        if (json_body.contains("error")) {
+            const std::string error_message = json_body["error"].get<std::string>();
+            // std::cout << "Error creating user: " << json_body["error"] << std::endl;
+            throw std::runtime_error("Error creating user: " + error_message);
         }
         throw std::runtime_error("Failed to create user: " + resp.body);
     }

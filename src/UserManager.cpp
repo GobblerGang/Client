@@ -51,20 +51,7 @@ nlohmann::json UserManager::save() {
         {"updated_at", getKEK().updated_at}
     };
     UserModelORM user_orm;
-    user_orm.uuid = user_data.uuid;
-    user_orm.username = user_data.username;
-    user_orm.email = user_data.email;
-    user_orm.ed25519_identity_key_public = user_data.ed25519_identity_key_public;
-    user_orm.ed25519_identity_key_private_enc = user_data.ed25519_identity_key_private_enc;
-    user_orm.ed25519_identity_key_private_nonce = user_data.ed25519_identity_key_private_nonce;
-    user_orm.x25519_identity_key_public = user_data.x25519_identity_key_public;
-    user_orm.x25519_identity_key_private_enc = user_data.x25519_identity_key_private_enc;
-    user_orm.x25519_identity_key_private_nonce = user_data.x25519_identity_key_private_nonce;
-    user_orm.signed_prekey_public = user_data.signed_prekey_public;
-    user_orm.signed_prekey_signature = user_data.signed_prekey_signature;
-    user_orm.signed_prekey_private_enc = user_data.signed_prekey_private_enc;
-    user_orm.signed_prekey_private_nonce = user_data.signed_prekey_private_nonce;
-    user_orm.opks_json = user_data.opks_json;
+    user_orm = user_data;
     // Save user_orm to database
     int user_id = db().insert(user_orm);
     if (user_id < 0) {
