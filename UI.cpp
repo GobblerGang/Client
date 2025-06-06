@@ -155,8 +155,8 @@ void MainWindowUI::setupFileTab() {
 
     fileList = new QListWidget();
     fileList->setStyleSheet(
-        "QListWidget { background-color: white; border: 1px solid #ccc; border-radius: 6px; }"
-        "QListWidget::item:selected { background-color: #4A90E2; color: white; }"
+        "QListWidget { background-color: white; border: 1px solid #ccc; border-radius: 6px; color: black; }"
+        "QListWidget::item:selected { background-color: #4A90E2; color: black; }"
     );
     fileLayout->addWidget(fileList);
 

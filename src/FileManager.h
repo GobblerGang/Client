@@ -54,6 +54,8 @@ public:
     nlohmann::json prepareForUpload() const;
     void uploadFile(const std::vector<uint8_t> &file_content, const std::string &mime_type,
                     const std::string &file_name);
+    void refreshFiles();
+    const std::vector<File> getFiles() const { return files_; }
 protected:
     // #Virtual Function Override (returns by value)
     // Implements the pure virtual function from DataManager
@@ -66,7 +68,11 @@ protected:
 
 private:
     File data_; // Internal storage for file data
+    std::vector<File> files_; // List of files managed by this FileManager
     UserManager* userManager_; // Reference to UserManager for user-related operations
+    void setFilesFromJson(const nlohmann::json& files_json, bool isOwner);
+
+
 };
 
 #endif // FILE_H

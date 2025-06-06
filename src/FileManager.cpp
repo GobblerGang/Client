@@ -9,7 +9,7 @@
 #include "Server.h"
 #include "utils/cryptography/VaultManager.h"
 #include "utils/cryptography/keys/MasterKey.h"
-#include "utils/dataclasses/Vault.h"
+
 
 // Add a member variable for UserManager reference in FileManager's implementation file
 
@@ -17,7 +17,7 @@
 
 // Constructor to accept UserManager reference
 FileManager::FileManager(UserManager* user_manager)
-    : userManager_(user_manager)
+    : data_(), userManager_(user_manager)
 {}
 
 void FileManager::encrypt(const std::vector<uint8_t>& plain_text, const std::string& mime_type, const std::string &filename) {
@@ -57,20 +57,57 @@ nlohmann::json FileManager::save() {
     return prepareForUpload();
 }
 
-void FileManager::load(const std::string& identifier) {
-    // TODO: Implement loading from storage
-    // This will be implemented when we have the storage system ready
-    // For now, this is a placeholder
+void FileManager::load(const std::string& identifier = "") {
+    // this will get all owned and shared files for the user
+    auto current_user = userManager_->getUser();
+    const UserModel user = userManager_->getUser();
+    auto [files_json, error] = Server::instance().get_owned_files(
+        user.uuid,
+        userManager_->get_ed25519_identity_key_private()
+    );
+    if (!error.empty()) {
+        throw std::runtime_error("Failed to load files: " + error);
+    }
+    std::cout << "Files JSON: " << files_json.dump(4) << std::endl;
+    setFilesFromJson(files_json["files"], true);
+    auto pacs_json = Server::instance().get_user_pacs(
+        user.uuid,
+        userManager_->get_ed25519_identity_key_private()
+        );
+    std::cout << "PACs JSON: " << pacs_json.dump(4) << std::endl;
+
+    nlohmann::json issued_pacs = pacs_json["issued_pacs"];
+    nlohmann::json received_pacs = pacs_json["received_pacs"];
+    setFilesFromJson(received_pacs, false);
 }
 
-// std::vector<uint8_t> FileManager::decryptWithKey(
-//     const std::vector<uint8_t>& nonce,
-//     const std::vector<uint8_t>& ciphertext,
-//     const std::vector<uint8_t>& key,
-//     const std::optional<std::vector<uint8_t>>& associated_data
-// ) const {
-//     return CryptoUtils::decrypt_with_key(nonce, ciphertext, key, associated_data);
-// }
+void FileManager::setFilesFromJson(const nlohmann::json &files_json, bool isOwner = false) {
+    if (!files_json.is_array()) {
+        throw std::runtime_error("Invalid files JSON format: expected an array");
+    }
+    for (const auto& file_json : files_json) {
+        std::cout << "File JSON: " << file_json.dump(4) << std::endl;
+        File file;
+
+        if (file_json.contains("filename")) {
+            file.file_name = file_json["filename"].get<std::string>();
+        } else if (file_json.contains("file_name")) {
+            file.file_name = file_json["file_name"].get<std::string>();
+        }
+        file.file_uuid = file_json["file_uuid"].get<std::string>();
+        file.mime_type = file_json["mime_type"].get<std::string>();
+        file.isOwner = isOwner;
+        files_.push_back(file);
+    }
+}
+
+void FileManager::refreshFiles() {
+    try {
+        load();
+    } catch (const std::exception& e) {
+        std::cerr << "Error refreshing files: " << e.what() << std::endl;
+    }
+}
 
 void FileManager::uploadFile(const std::vector<uint8_t>& fileBytes,
                            const std::string& mimeType,
@@ -83,24 +120,8 @@ void FileManager::uploadFile(const std::vector<uint8_t>& fileBytes,
 
         // 3. Upload to server using Server singleton
         const UserModel current_user = userManager_->getUser();
-        auto vault = VaultManager::get_user_vault(current_user);
-        auto master_key = MasterKey::instance().get();
-        auto kek = userManager_->get_decrypted_kek(master_key);
-        auto opt_keys = VaultManager::try_decrypt_private_keys(vault, kek);
-        if (!opt_keys.has_value()) {
-            throw std::runtime_error("Failed to decrypt private keys from vault.");
-        }
-        // const auto& [ed25519_private_key_bytes, x25519_private_key_bytes, signed_prekey_bytes] = *opt_keys;
-        auto ed25519_private_key_bytes = CryptoUtils::decrypt_with_key(
-        CryptoUtils::base64_decode(current_user.ed25519_identity_key_private_nonce),
-        CryptoUtils::base64_decode(current_user.ed25519_identity_key_private_enc),
-        kek,
-        VaultManager::get_ed25519_identity_associated_data()
-    );
-        if (ed25519_private_key_bytes.empty()) {
-            throw std::runtime_error("Failed to decrypt Ed25519 identity key with new password.");
-        }
-        Ed25519PrivateKey ed25519_private_key(ed25519_private_key_bytes);
+
+        Ed25519PrivateKey ed25519_private_key= userManager_->get_ed25519_identity_key_private();
 
 
         auto [response, error] = Server::instance().upload_file(

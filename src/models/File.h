@@ -11,6 +11,8 @@ struct File {
     std::string file_nonce;           // base64 encoded
     std::string enc_file_k;           // base64 encoded
     std::string k_file_nonce;         // base64 encoded
+    std::string file_uuid;
+    bool isOwner;
 };
 
 #endif // FILEDATA_H 

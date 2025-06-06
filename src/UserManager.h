@@ -7,6 +7,8 @@
 
 #include <models/UserModel.h>
 #include "RemoteUserManager.h"
+#include "utils/cryptography/CryptoUtils.h"
+#include "utils/cryptography/keys/Ed25519Key.h"
 
 // Derived class for managing user data locally
 class UserManager: RemoteUserManager {
@@ -41,6 +43,7 @@ public:
     // Decrypts the KEK using the provided master key
     std::vector<uint8_t> get_decrypted_kek(const std::vector<uint8_t> &master_key) const;
 
+    Ed25519PrivateKey get_ed25519_identity_key_private();
     // #Function Declaration
     // Checks if the KEK needs to be refreshed
     void check_kek_freshness();
