@@ -5,7 +5,7 @@
 #include <QInputDialog>
 
 #include "Server.h"
-#include "ui.h"
+#include "UI.h"
 #include "UserManager.h"
 #include "database/db_instance.h"
 #include "src/Auth.h"

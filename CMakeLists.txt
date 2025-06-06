@@ -82,7 +82,7 @@ set(SOURCES
         src/auth.cpp
 
         include/utils/cryptography/CryptoUtils.cpp
-        include/utils/cryptography/3xDH.cpp
+        include/utils/cryptography/ThreexDH.cpp
 
         include/utils/cryptography/VaultManager.cpp
         include/utils/cryptography/keyGeneration.cpp
@@ -113,7 +113,7 @@ set(HEADERS
         include/utils/cryptography/keys/Ed25519Key.h
         include/utils/cryptography/keys/X25519Key.h
         include/utils/cryptography/keys/OPKPair.h
-        include/utils/cryptography/3xDH.h
+        include/utils/cryptography/ThreexDH.h
 
         include/database/schema.hpp
         include/database/db_instance.h
@@ -134,7 +134,7 @@ set(HEADERS
         src/KekService.h
         src/kekService.cpp
         include/utils/Config.h
-        include/utils/cryptography/3xDH.h
+        include/utils/cryptography/ThreexDH.h
         include/utils/cryptography/keys/OPKPair.h
         include/utils/cryptography/keys/IdentityKeyPairs.h
         src/RequestHeaders.h

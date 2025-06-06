@@ -7,9 +7,11 @@
 #include "UserManager.h"
 #include <stdexcept>
 #include "Server.h"
+#include "utils/cryptography/ThreexDH.h"
 #include "utils/cryptography/VaultManager.h"
 #include "utils/cryptography/keys/MasterKey.h"
-#include "utils/dataclasses/Vault.h"
+#include "models/File.h"
+#include "utils/cryptography/KeyGeneration.h"
 
 // Add a member variable for UserManager reference in FileManager's implementation file
 
@@ -115,5 +117,80 @@ void FileManager::uploadFile(const std::vector<uint8_t>& fileBytes,
 
     } catch (const std::exception& e) {
         throw std::runtime_error("Upload failed: " + std::string(e.what()));
+    }
+}
+
+void FileManager::shareFile(std::string file_uuid, const File &file_content, const std::string &mime_type,
+                   const std::string &file_name, const std::string recipient_username)
+{
+    try {
+        // 1. Query server for recipient's existence and public keys
+        UserModel recipient_user = Server::instance().get_user_by_name(recipient_username);
+        if (recipient_user.uuid.empty()) {
+            throw std::runtime_error("Recipient user does not exist.");
+        }
+
+        std::vector<uint8_t> recipient_ed25519_pub = CryptoUtils::base64_decode(recipient_user.ed25519_identity_key_public);
+        std::vector<uint8_t> recipient_x25519_pub = CryptoUtils::base64_decode(recipient_user.x25519_identity_key_public);
+        std::vector<uint8_t> recipient_spk_pub = CryptoUtils::base64_decode(recipient_user.signed_prekey_public);
+
+        // 2. Get our own identity keys (assume we have them decrypted already)
+        const UserModel current_user = userManager_->getUser();
+        auto vault = VaultManager::get_user_vault(current_user);
+        auto master_key = MasterKey::instance().get();
+        auto kek = userManager_->get_decrypted_kek(master_key);
+        auto opt_keys = VaultManager::try_decrypt_private_keys(vault, kek);
+        if (!opt_keys.has_value()) {
+            throw std::runtime_error("Failed to decrypt private keys from vault.");
+        }
+        auto ed25519_private_key_bytes = CryptoUtils::decrypt_with_key(
+            CryptoUtils::base64_decode(current_user.ed25519_identity_key_private_nonce),
+            CryptoUtils::base64_decode(current_user.ed25519_identity_key_private_enc),
+            kek,
+            VaultManager::get_ed25519_identity_associated_data()
+        );
+        if (ed25519_private_key_bytes.empty()) {
+            throw std::runtime_error("Failed to decrypt Ed25519 identity key.");
+        }
+        Ed25519PrivateKey ed25519_private_key(ed25519_private_key_bytes);
+
+        // 3. Perform 3XDH to derive shared secret
+        // You will need to adapt this to your actual 3XDH API and key types
+        auto [X25519PrivateKey, X25519PublicKey] = KeyGeneration::generate_ephemeral_x25519_keypair();
+        std::vector<uint8_t> shared_secret = ThreeXDH::perform_3xdh_sender(
+            ed25519_private_key.to_evp_pkey(),
+            X25519PrivateKey.to_evp_pkey(),
+            X25519PublicKey.to_evp_pkey(),
+            X25519PublicKey.to_evp_pkey()
+        );
+
+        // 4. Create PAC (Protected Access Credential) using shared secret
+        // This is a placeholder for your PAC creation logic
+        PAC pac = CryptoUtils::create_pac(
+            file_uuid,
+            recipient_user.uuid,
+            current_user.uuid,
+            CryptoUtils::base64_decode(file_content.enc_file_k),
+            CryptoUtils::base64_decode(file_content.k_file_nonce),
+            X25519PublicKey.to_bytes(),
+            0, // valid_until, set to 0 for no expiration
+            ed25519_private_key.to_evp_pkey(),
+            std::make_optional(file_name),
+            std::make_optional(mime_type)
+        );
+
+        // 5. Send PAC to server
+        auto [response, error] = Server::instance().send_pac(
+            pac,
+            current_user.uuid,
+            recipient_username
+        );
+        if (!error.empty()) {
+            throw std::runtime_error(error);
+        }
+        std::cout << "File shared successfully with " << recipient_username << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Share failed: " << e.what() << std::endl;
+        throw;
     }
 }

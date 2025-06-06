@@ -54,6 +54,9 @@ public:
     nlohmann::json prepareForUpload() const;
     void uploadFile(const std::vector<uint8_t> &file_content, const std::string &mime_type,
                     const std::string &file_name);
+
+    void shareFile(std::string file_uuid, const File &file_content, const std::string &mime_type,
+                    const std::string &file_name, const std::string recipient_username);
 protected:
     // #Virtual Function Override (returns by value)
     // Implements the pure virtual function from DataManager

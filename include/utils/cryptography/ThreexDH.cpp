@@ -1,4 +1,4 @@
-#include "3xDH.h"
+#include "ThreexDH.h"
 #include <openssl/evp.h>
 #include <vector>
 #include <cstring>

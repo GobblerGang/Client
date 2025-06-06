@@ -21,4 +21,6 @@ public:
 
     static std::vector<OPKPair> keypairs_from_opk_bytes(
     const std::vector<std::pair<std::vector<uint8_t>, std::vector<uint8_t>>>& decrypted_opks);
+
+    static std::pair<X25519PrivateKey, X25519PublicKey>generate_ephemeral_x25519_keypair();
 };

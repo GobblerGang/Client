@@ -151,3 +151,38 @@ std::vector<OPKPair> KeyGeneration::keypairs_from_opk_bytes(
     }
     return opk_keypairs;
 }
+
+std::pair<X25519PrivateKey, X25519PublicKey> KeyGeneration::generate_ephemeral_x25519_keypair() {
+    // Create context
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, nullptr);
+    if (!ctx) throw std::runtime_error("Failed to create context for X25519 keygen");
+
+    // Generate the keypair
+    EVP_PKEY* evp_privkey = nullptr;
+    if (EVP_PKEY_keygen_init(ctx) <= 0 || EVP_PKEY_keygen(ctx, &evp_privkey) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        throw std::runtime_error("X25519 key generation failed");
+    }
+    EVP_PKEY_CTX_free(ctx);
+
+    // Extract raw private key bytes
+    std::vector<uint8_t> priv_bytes(32);
+    size_t priv_len = priv_bytes.size();
+    if (!EVP_PKEY_get_raw_private_key(evp_privkey, priv_bytes.data(), &priv_len)) {
+        EVP_PKEY_free(evp_privkey);
+        throw std::runtime_error("Failed to get raw X25519 private key");
+    }
+
+    // Wrap in X25519PrivateKey class
+    X25519PrivateKey priv_key(priv_bytes);
+
+    // Derive and wrap the public key
+    std::vector<uint8_t> pub_bytes = priv_key.get_public_key_bytes();
+    X25519PublicKey pub_key(pub_bytes);
+
+    // Free the raw EVP_PKEY used for key generation (no longer needed)
+    EVP_PKEY_free(evp_privkey);
+
+    return {priv_key, pub_key};
+}
+
