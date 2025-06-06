@@ -44,6 +44,8 @@ public:
     std::vector<uint8_t> get_decrypted_kek(const std::vector<uint8_t> &master_key) const;
 
     Ed25519PrivateKey get_ed25519_identity_key_private();
+    X25519PrivateKey get_x25519_identity_key_private();
+    X25519PrivateKey get_x25519_signed_prekey_private();
     // #Function Declaration
     // Checks if the KEK needs to be refreshed
     void check_kek_freshness();

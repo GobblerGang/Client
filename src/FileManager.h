@@ -56,6 +56,8 @@ public:
                     const std::string &file_name);
     void refreshFiles();
 
+    std::vector<uint8_t> downloadFile(const PAC &pac, const UserModel &user_model);
+
     std::vector<File> getFiles() const { return files_; }
     std::vector<PAC> getReceivedPacs() const { return received_pacs_; }
     std::vector<PAC> getIssuedPacs() const { return issued_pacs_; }
