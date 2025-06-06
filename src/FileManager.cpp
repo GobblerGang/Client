@@ -11,6 +11,7 @@
 #include "utils/cryptography/VaultManager.h"
 #include "utils/cryptography/keys/MasterKey.h"
 #include "models/File.h"
+#include "utils/dataclasses/PAC.h"
 #include "utils/cryptography/KeyGeneration.h"
 
 // Add a member variable for UserManager reference in FileManager's implementation file
@@ -153,28 +154,37 @@ void FileManager::shareFile(std::string file_uuid, const File &file_content, con
             throw std::runtime_error("Failed to decrypt Ed25519 identity key.");
         }
         Ed25519PrivateKey ed25519_private_key(ed25519_private_key_bytes);
+        X25519PublicKey x25519_identity_key(recipient_x25519_pub);
+        X25519PublicKey recipient_spk_pub_key(recipient_spk_pub);
+        EVP_PKEY* recipient_spk_pub_pkey = recipient_spk_pub_key.to_evp_pkey();
 
-        // 3. Perform 3XDH to derive shared secret
-        // You will need to adapt this to your actual 3XDH API and key types
-        auto [X25519PrivateKey, X25519PublicKey] = KeyGeneration::generate_ephemeral_x25519_keypair();
+        auto [EphemPrivateKey, EphemPublicKey] = KeyGeneration::generate_ephemeral_x25519_keypair();
+
+        // Now you can use it in the 3XDH function
         std::vector<uint8_t> shared_secret = ThreeXDH::perform_3xdh_sender(
-            ed25519_private_key.to_evp_pkey(),
-            X25519PrivateKey.to_evp_pkey(),
-            X25519PublicKey.to_evp_pkey(),
-            X25519PublicKey.to_evp_pkey()
+            ed25519_private_key.to_evp_pkey(),    // sender identity key
+            EphemPrivateKey.to_evp_pkey(),          // sender ephemeral key
+            x25519_identity_key.to_evp_pkey(),                  // recipient identity key
+            recipient_spk_pub_pkey,               // recipient SPK
+            nullptr                               // no one-time key
         );
+
+        // Don't forget to free the EVP_PKEY when done
+        EVP_PKEY_free(recipient_spk_pub_pkey);
 
         // 4. Create PAC (Protected Access Credential) using shared secret
         // This is a placeholder for your PAC creation logic
+        std::vector<uint8_t> public_identity_key = CryptoUtils::base64_decode(current_user.ed25519_identity_key_public);
+        Ed25519PublicKey current_users_ed25519_identity_key(recipient_ed25519_pub);
         PAC pac = CryptoUtils::create_pac(
             file_uuid,
             recipient_user.uuid,
             current_user.uuid,
             CryptoUtils::base64_decode(file_content.enc_file_k),
             CryptoUtils::base64_decode(file_content.k_file_nonce),
-            X25519PublicKey.to_bytes(),
+            EphemPublicKey.to_bytes(),
             0, // valid_until, set to 0 for no expiration
-            ed25519_private_key.to_evp_pkey(),
+            current_users_ed25519_identity_key.to_evp_pkey(),
             std::make_optional(file_name),
             std::make_optional(mime_type)
         );
@@ -182,8 +192,8 @@ void FileManager::shareFile(std::string file_uuid, const File &file_content, con
         // 5. Send PAC to server
         auto [response, error] = Server::instance().send_pac(
             pac,
-            current_user.uuid,
-            recipient_username
+            recipient_user.uuid,
+            ed25519_private_key
         );
         if (!error.empty()) {
             throw std::runtime_error(error);
