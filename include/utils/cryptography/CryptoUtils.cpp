@@ -153,7 +153,9 @@ PAC CryptoUtils::create_pac(
         pac_json.at("sender_ephemeral_pubkey").get<std::string>(),
         pac_json.at("encrypted_file_key_nonce").get<std::string>(),
         filename.value_or(""),
-        mime_type.value_or("")
+        mime_type.value_or(""),
+        "",
+        ""
     };
 
 }

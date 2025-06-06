@@ -99,6 +99,7 @@ set(SOURCES
         src/Server.cpp
         include/utils/Config.cpp
         src/models/UserModelORM.cpp
+        include/utils/cryptography/3xDH.cpp
 )
 
 set(HEADERS

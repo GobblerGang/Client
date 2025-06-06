@@ -290,6 +290,42 @@ Ed25519PrivateKey UserManager::get_ed25519_identity_key_private() {
     );
     const Ed25519PrivateKey ed25519_private_key(ed25519_private_key_bytes);
     return ed25519_private_key;
+}
+
+X25519PrivateKey UserManager::get_x25519_identity_key_private() {
+    auto vault = VaultManager::get_user_vault(user_data);
+    auto master_key = MasterKey::instance().get();
+    auto kek = get_decrypted_kek(master_key);
+    auto opt_keys = VaultManager::try_decrypt_private_keys(vault, kek);
+    if (!opt_keys.has_value()) {
+        throw std::runtime_error("Failed to decrypt private keys from vault.");
+    }
+    auto x25519_private_key_bytes = CryptoUtils::decrypt_with_key(
+        CryptoUtils::base64_decode(user_data.x25519_identity_key_private_nonce),
+        CryptoUtils::base64_decode(user_data.x25519_identity_key_private_enc),
+        kek,
+        VaultManager::get_x25519_identity_associated_data()
+    );
+    const X25519PrivateKey x25519_private_key(x25519_private_key_bytes);
+    return x25519_private_key;
+}
+
+X25519PrivateKey UserManager::get_x25519_signed_prekey_private() {
+    auto vault = VaultManager::get_user_vault(user_data);
+    auto master_key = MasterKey::instance().get();
+    auto kek = get_decrypted_kek(master_key);
+    auto opt_keys = VaultManager::try_decrypt_private_keys(vault, kek);
+    if (!opt_keys.has_value()) {
+        throw std::runtime_error("Failed to decrypt private keys from vault.");
+    }
+    auto x25519_private_key_bytes = CryptoUtils::decrypt_with_key(
+        CryptoUtils::base64_decode(user_data.signed_prekey_private_nonce),
+        CryptoUtils::base64_decode(user_data.signed_prekey_private_enc),
+        kek,
+        VaultManager::get_x25519_identity_associated_data()
+    );
+    const X25519PrivateKey x25519_private_key(x25519_private_key_bytes);
+    return x25519_private_key;
 };
 
 void UserManager::check_kek_freshness() {

@@ -92,7 +92,7 @@ private:
 
     void connectFileOperations() {
         connectButton(ui.uploadButton, &ApplicationController::handleUpload);
-        // connectButton(ui.downloadButton, &ApplicationController::handleDownload);
+        connectButton(ui.downloadButton, &ApplicationController::handleDownload);
         connectButton(ui.shareButton, &ApplicationController::handleShare);
         connectButton(ui.revokeButton, &ApplicationController::handleRevoke);
         connectButton(ui.deleteButton, &ApplicationController::handleDelete);
@@ -100,7 +100,53 @@ private:
     }
 
 
-    void handleDownload(bool arg);
+    void handleDownload(bool) {
+        QListWidgetItem* selectedItem = ui.fileList->currentItem();
+        if (!selectedItem) {
+            QMessageBox::warning(ui.window, "Download", "Please select a file to download.");
+            return;
+        }
+
+        QString itemText = selectedItem->text();
+        if (itemText == "Owned Files:" || itemText == "Shared With You:") return;
+
+        QString fileUuid = selectedItem->data(Qt::UserRole).toString();
+        if (fileUuid.isEmpty()) {
+            QMessageBox::warning(ui.window, "Download", "Invalid file selection.");
+            return;
+        }
+
+        // Find the PAC for this file_uuid in received_pacs
+        const auto& received_pacs = fileManager->getReceivedPacs();
+        auto it = std::find_if(received_pacs.begin(), received_pacs.end(),
+            [&](const PAC& pac) { return pac.file_uuid == fileUuid.toStdString(); });
+
+        if (it == received_pacs.end()) {
+            QMessageBox::warning(ui.window, "Download", "No access PAC found for this file.");
+            return;
+        }
+
+        try {
+            // Download the file
+            std::vector<uint8_t> fileData = fileManager->downloadFile(*it, userManager->getUser());
+
+            // Ask user where to save
+            QString savePath = QFileDialog::getSaveFileName(ui.window, "Save File", QString::fromStdString(it->filename));
+            if (savePath.isEmpty()) return;
+
+            QFile outFile(savePath);
+            if (!outFile.open(QIODevice::WriteOnly)) {
+                QMessageBox::critical(ui.window, "Error", "Could not open file for writing.");
+                return;
+            }
+            outFile.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
+            outFile.close();
+
+            QMessageBox::information(ui.window, "Download", "File downloaded successfully.");
+        } catch (const std::exception& e) {
+            QMessageBox::critical(ui.window, "Download Error", e.what());
+        }
+    }
 
     void handleLogout(bool) {
         QMessageBox::StandardButton reply = QMessageBox::question(
@@ -271,30 +317,41 @@ private:
         try {
             fileManager->refreshFiles();
             const auto& files = fileManager->getFiles();
+            const auto& received_pacs = fileManager->getReceivedPacs();
+            const auto& issued_pacs = fileManager->getIssuedPacs();
             ui.fileList->clear();
             ui.fileList->addItem("Owned Files:");
             for (const auto& file : files) {
-                if (file.isOwner) {
-                    QString info = QString("%1\nUUID: %2\nMIME: %3")
-                        .arg(QString::fromStdString(file.file_name))
-                        .arg(QString::fromStdString(file.file_uuid))
-                        .arg(QString::fromStdString(file.mime_type));
+                std::vector<std::string> sharedWith;
+                for (const auto& pac : issued_pacs) {
+                    if (pac.file_uuid == file.file_uuid) {
+                        sharedWith.push_back(pac.recipient_username); // or pac.recipient_uuid
+                    }
+                }
+                // Display file info and sharedWith list
+                QString info = QString("%1\nMIME: %2\nShared with: %3")
+                    .arg(QString::fromStdString(file.file_name))
+                    .arg(QString::fromStdString(file.mime_type))
+                    .arg(QString::fromStdString(
+                        sharedWith.empty() ? "None" :
+                        std::accumulate(std::next(sharedWith.begin()), sharedWith.end(), sharedWith[0],
+                            [](std::string a, std::string b) { return a + ", " + b; })
+                    ));
                     QListWidgetItem* item = new QListWidgetItem(info);
                     item->setData(Qt::UserRole, QString::fromStdString(file.file_uuid));
                     ui.fileList->addItem(item);
-                }
             }
             ui.fileList->addItem("Shared With You:");
-            for (const auto& file : files) {
-                if (!file.isOwner) {
-                    QString info = QString("%1\nUUID: %2\nMIME: %3")
-                        .arg(QString::fromStdString(file.file_name))
-                        .arg(QString::fromStdString(file.file_uuid))
-                        .arg(QString::fromStdString(file.mime_type));
+            for (const auto& pac : received_pacs) {
+
+                    QString info = QString("%1\n %2\nOwner: %3")
+                        .arg(QString::fromStdString(pac.filename))
+                        .arg(QString::fromStdString(pac.mime_type))
+                        .arg(QString::fromStdString(pac.issuer_username));
                     QListWidgetItem* item = new QListWidgetItem(info);
-                    item->setData(Qt::UserRole, QString::fromStdString(file.file_uuid));
+                    item->setData(Qt::UserRole, QString::fromStdString(pac.file_uuid));
                     ui.fileList->addItem(item);
-                }
+
             }
         }
         catch (const std::exception& e) {
