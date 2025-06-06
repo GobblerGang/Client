@@ -3,8 +3,13 @@
 //
 #include <iostream>
 #include <Server.h>
-
+#include <curl/curl.h>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <nlohmann/json.hpp>
 #include "models/KEKModel.h"
+#include "models/File.h"
 #include "utils/Config.h"
 #include "utils/cryptography/CryptoUtils.h"
 #include "utils/cryptography/keys/Ed25519Key.h"
@@ -42,7 +47,7 @@ void Server::cleanup_curl() {
 }
 
 // Helper function to handle HTTP requests
-HttpResponse Server::perform_request(const std::string &url, const std::vector<std::string>& headers, const std::string* payload, bool is_post, bool is_put) {
+HttpResponse Server::perform_request(const std::string &url, const nlohmann::json& headers, const std::string* payload, bool is_post, bool is_put) {
     init_curl();
     HttpResponse response_obj;
     std::string response;
@@ -71,7 +76,8 @@ HttpResponse Server::perform_request(const std::string &url, const std::vector<s
     if (is_post || is_put) {
         curl_headers = curl_slist_append(curl_headers, "Content-Type: application/json");
     }
-    for (const auto& header : headers) {
+    for (const auto& [key, value] : headers.items()) {
+        std::string header = key + ": " + value.get<std::string>();
         curl_headers = curl_slist_append(curl_headers, header.c_str());
     }
     curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, curl_headers);
@@ -94,18 +100,18 @@ HttpResponse Server::perform_request(const std::string &url, const std::vector<s
     return response_obj;
 }
 
-HttpResponse Server::get_request(const std::string &url, const std::vector<std::string>& headers) {
-    return perform_request(url, headers, nullptr, false, false);
+HttpResponse Server::get_request(const std::string &url, const nlohmann::json& headers_json) {
+    return perform_request(url, headers_json, nullptr, false, false);
 }
 
-HttpResponse Server::post_request(const std::string &url, const nlohmann::json &payload, const std::vector<std::string>& headers) {
+HttpResponse Server::post_request(const std::string &url, const nlohmann::json &payload, const nlohmann::json& headers_json) {
     std::string payload_str = payload.dump();
-    return perform_request(url, headers, &payload_str, true, false);
+    return perform_request(url, headers_json, &payload_str, true, false);
 }
 
-HttpResponse Server::put_request(const std::string &url, const nlohmann::json &payload, const std::vector<std::string>& headers) {
+HttpResponse Server::put_request(const std::string &url, const nlohmann::json &payload, const nlohmann::json& headers_json) {
     std::string payload_str = payload.dump();
-    return perform_request(url, headers, &payload_str, false, true);
+    return perform_request(url, headers_json, &payload_str, false, true);
 }
 
 nlohmann::json Server::parse_and_check_response(const HttpResponse& resp, const std::string& context) {
@@ -132,7 +138,7 @@ bool Server::get_index() {
 }
 
 std::string Server::get_server_nonce(const std::string &user_uuid) {
-    HttpResponse resp = get_request(server_url_ + "/api/nonce?user_uuid=" + user_uuid);
+    HttpResponse resp = get_request(server_url_ + "/api/nonce/" + user_uuid);
     if (!resp.success) {
         throw std::runtime_error("Failed to get nonce: " + resp.body);
     }
@@ -187,9 +193,9 @@ nlohmann::json Server::update_kek_info(const std::string &encrypted_kek,
         {"nonce", kek_nonce},
         {"updated_at", updated_at},
     };
-    std::vector<std::string> headers = set_headers(ik_priv, user_uuid, payload);
+    nlohmann::json headers_json = set_headers(ik_priv, user_uuid, payload);
 
-    HttpResponse resp = put_request(server_url_ + "/api/kek?user_uuid=" + user_uuid, payload, headers);
+    HttpResponse resp = put_request(server_url_ + "/api/kek?user_uuid=" + user_uuid, payload, headers_json);
     return parse_and_check_response(resp, "update_kek_info");
 }
 
@@ -226,39 +232,248 @@ UserModel Server::get_user_by_name(const std::string& username) {
     std::cout << "Fetched user: " << user.username << " with UUID: " << user.uuid << std::endl;
     return user;
 }
-//TODO
-// std::pair<nlohmann::json, std::string> Server::get_user_by_name(const std::string &username) {
-// }
-//
-// std::pair<nlohmann::json, std::string> Server::upload_file(const std::string &file_ciphertext,
-//     const std::string &file_name, const std::string &owner_uuid, const std::string &mime_type,
-//     const std::string &file_nonce, const std::string &enc_file_k, const std::string &k_file_nonce,
-//     const Ed25519PrivateKey &private_key) {
-// }
-//
-// std::pair<nlohmann::json, std::string> Server::get_user_keys(const std::string &sender_user_uuid,
-//     const std::string &recipient_uuid, const Ed25519PrivateKey &private_key) {
-// }
-//
-// std::pair<nlohmann::json, std::string> Server::send_pac(const PAC &pac, const std::string &sender_uuid,
-//     const Ed25519PrivateKey &private_key) {
-// }
-//
-// std::pair<nlohmann::json, std::string> Server::download_file(const std::string &file_uuid,
-//     const Ed25519PrivateKey &private_key, const std::string &user_uuid) {
-// }
-//
-// std::pair<nlohmann::json, std::string> Server::get_owned_files(const std::string &user_id,
-//     const Ed25519PrivateKey &private_key) {
-// }
-//
-// nlohmann::json Server::get_user_pacs(const std::string &user_id, const Ed25519PrivateKey &private_key) {
-// }
-//
-// std::pair<nlohmann::json, std::string> Server::get_file_info(const std::string &file_uuid, const std::string &user_uuid,
-//     const Ed25519PrivateKey &private_key) {
-//
-// }
+
+std::pair<nlohmann::json, std::string> Server::upload_file(File file, const std::string &owner_uuid, const Ed25519PrivateKey &private_key)
+{
+    nlohmann::json payload = {
+        {"file_name", file.file_name},
+        {"enc_file_ciphertext", file.enc_file_ciphertext},
+        {"mime_type", file.mime_type},
+        {"file_nonce", file.file_nonce},
+        {"enc_file_k", file.enc_file_k},
+        {"k_file_nonce", file.k_file_nonce}
+    };
+
+    nlohmann::json headers_json = set_headers(private_key, owner_uuid, payload);
+    const std::string url = server_url() + "/api/files/upload";
+
+    HttpResponse res = post_request(url, payload, headers_json);
+
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+        return {json_response, ""};
+    } catch (const std::exception& e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
+std::pair<nlohmann::json, std::string> Server::get_user_keys(const std::string &sender_user_uuid,
+    const std::string &recipient_uuid, const Ed25519PrivateKey &private_key) {
+    nlohmann::json payload = nlohmann::json::object(); // empty payload for GET
+    nlohmann::json headers_json = set_headers(private_key, sender_user_uuid, payload);
+    const std::string url = server_url() + "/api/users/keys/" + recipient_uuid;
+
+    HttpResponse res = get_request(url, headers_json);
+
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+        return {json_response, ""};
+    } catch (const std::exception& e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
+std::pair<nlohmann::json, std::string> Server::send_pac(const PAC &pac, const std::string &sender_uuid,
+                                                        const Ed25519PrivateKey &private_key) {
+    // Step 1: Create the JSON payload
+    nlohmann::json payload = {
+        {"recipient_uuid", pac.recipient_id},
+        {"file_uuid", pac.file_uuid},
+        {"valid_until", pac.valid_until},
+        {"encrypted_file_key", pac.encrypted_file_key},
+        {"signature", pac.signature},
+        {"sender_ephemeral_public", pac.sender_ephemeral_public},
+        {"k_file_nonce", pac.k_file_nonce}
+    };
+
+    // Step 3: Set headers with signature
+    nlohmann::json headers_json = set_headers(private_key, sender_uuid, payload);
+    const std::string url = server_url() + "/api/files/share";
+    HttpResponse res = post_request(url, payload.dump(), headers_json);
+
+    // Step 5: Handle the response
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+        return {json_response, ""};
+    } catch (const std::exception &e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
+std::pair<nlohmann::json, std::string> Server::get_owned_files(
+    const std::string &user_uuid,
+    const Ed25519PrivateKey &private_key
+) {
+    nlohmann::json payload = nlohmann::json::object(); // empty payload for GET
+    nlohmann::json headers_json = set_headers(private_key, user_uuid, payload);
+    const std::string url = server_url() + "/api/files/owned";
+    HttpResponse res = get_request(url, headers_json);
+
+    // Step 5: Handle failure
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+        // If the backend returns { "owned_files": [...] }
+        if (json_response.contains("owned_files")) {
+            return {json_response["owned_files"], ""};
+        }
+        return {json_response, ""};
+    } catch (const std::exception &e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
+nlohmann::json Server::get_user_pacs(const std::string &user_id, const Ed25519PrivateKey &private_key) {
+    nlohmann::json payload = nlohmann::json::object(); // Empty payload
+    nlohmann::json headers_json = set_headers(private_key, user_id, payload);
+    const std::string url = server_url() + "/api/files/pacs";
+    HttpResponse res = get_request(url, headers_json);
+    if (!res.success) {
+        std::cerr << "Request failed: " << curl_easy_strerror(res.curl_code) << std::endl;
+        return {
+                {"received_pacs", nlohmann::json::array()},
+                {"issued_pacs", nlohmann::json::array()}
+        };
+    }
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (!json_response.contains("received_pacs")) {
+            json_response["received_pacs"] = nlohmann::json::array();
+        }
+        if (!json_response.contains("issued_pacs")) {
+            json_response["issued_pacs"] = nlohmann::json::array();
+        }
+        return json_response;
+    } catch (const std::exception &e) {
+        std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        return {
+                {"received_pacs", nlohmann::json::array()},
+                {"issued_pacs", nlohmann::json::array()}
+        };
+    }
+}
+
+std::pair<nlohmann::json, std::string> Server::get_file_info(
+    const std::string &file_uuid,
+    const std::string &user_uuid,
+    const Ed25519PrivateKey &private_key
+) {
+    nlohmann::json payload = nlohmann::json::object();  // empty payload for GET
+    nlohmann::json headers_json = set_headers(private_key, user_uuid, payload);
+    const std::string url = server_url() + "/api/files/info/" + file_uuid;
+    HttpResponse res = get_request(url, headers_json);
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+        return {json_response, ""};
+    } catch (const std::exception &e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
+std::pair<nlohmann::json, std::string> Server::download_file(
+    const std::string &file_uuid,
+    const Ed25519PrivateKey &private_key,
+    const std::string &user_uuid
+) {
+    nlohmann::json payload = nlohmann::json::object();  // empty payload for GET
+    nlohmann::json headers_json = set_headers(private_key, user_uuid, payload);
+
+    const std::string url = server_url() + "/api/files/download/" + file_uuid;
+
+    HttpResponse res = get_request(url, headers_json);
+
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+
+        return {json_response, ""};
+    } catch (const std::exception &e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
+std::pair<nlohmann::json, std::string> Server::revoke_file_access(
+    const std::string &file_uuid,
+    const std::string &file_ciphertext,
+    const std::string &file_nonce,
+    const std::string &enc_file_k,
+    const std::string &k_file_nonce,
+    const std::vector<nlohmann::json> &pacs, // List of PACs as JSON objects
+    const std::string &owner_uuid,
+    const Ed25519PrivateKey &private_key,
+    const std::string &filename,
+    const std::string &mime_type
+) {
+    nlohmann::json payload = {
+        {"file_uuid", file_uuid},
+        {"file_ciphertext", file_ciphertext},
+        {"file_nonce", file_nonce},
+        {"enc_file_k", enc_file_k},
+        {"k_file_nonce", k_file_nonce},
+        {"pacs", pacs},  // assuming pacs already JSON serialized
+        {"filename", filename},
+        {"mime_type", mime_type}
+    };
+    nlohmann::json headers_json = set_headers(private_key, owner_uuid, payload);
+    const std::string url = server_url() + "/api/files/revoke-access";
+
+    HttpResponse res = put_request(url, payload, headers_json);
+
+    if (!res.success) {
+        return {{}, "Request failed: " + std::string(curl_easy_strerror(res.curl_code))};
+    }
+
+    try {
+        auto json_response = nlohmann::json::parse(res.body);
+        if (json_response.contains("error")) {
+            return {{}, json_response["error"].get<std::string>()};
+        }
+        return {json_response, ""};
+    } catch (const std::exception &e) {
+        return {{}, std::string("JSON parsing error: ") + e.what()};
+    }
+}
+
+
 
 
 std::string Server::get_new_user_uuid() {
@@ -293,42 +508,47 @@ std::string Server::sign_payload(
     const std::string& nonce,
     const Ed25519PrivateKey& private_key
 ) {
-    // 1. Combine payload and nonce into a single message
+    // Combine payload and nonce
     std::vector<uint8_t> message(payload);
     message.insert(message.end(), nonce.begin(), nonce.end());
 
-    // 2. Create a signing context
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(private_key.to_evp_pkey(), nullptr);
-    if (!ctx) {
-        throw std::runtime_error("Failed to create signing context");
+    EVP_PKEY* pkey = private_key.to_evp_pkey();
+    if (!pkey) throw std::runtime_error("Invalid Ed25519 private key");
+
+    EVP_MD_CTX* md_ctx = EVP_MD_CTX_new();
+    if (!md_ctx) {
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Failed to create EVP_MD_CTX");
     }
 
-    if (EVP_PKEY_sign_init(ctx) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
-        throw std::runtime_error("EVP_PKEY_sign_init failed");
+    if (EVP_DigestSignInit(md_ctx, nullptr, nullptr, nullptr, pkey) <= 0) {
+        EVP_MD_CTX_free(md_ctx);
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("EVP_DigestSignInit failed");
     }
 
-    // 3. Get the length of the signature
     size_t siglen = 0;
-    if (EVP_PKEY_sign(ctx, nullptr, &siglen, message.data(), message.size()) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
-        throw std::runtime_error("EVP_PKEY_sign (size estimation) failed");
+    if (EVP_DigestSign(md_ctx, nullptr, &siglen, message.data(), message.size()) <= 0) {
+        EVP_MD_CTX_free(md_ctx);
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("EVP_DigestSign (size estimation) failed");
     }
 
-    // 4. Generate the signature
     std::vector<uint8_t> signature(siglen);
-    if (EVP_PKEY_sign(ctx, signature.data(), &siglen, message.data(), message.size()) <= 0) {
-        EVP_PKEY_CTX_free(ctx);
-        throw std::runtime_error("EVP_PKEY_sign failed");
+    if (EVP_DigestSign(md_ctx, signature.data(), &siglen, message.data(), message.size()) <= 0) {
+        EVP_MD_CTX_free(md_ctx);
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("EVP_DigestSign failed");
     }
     signature.resize(siglen);
-    EVP_PKEY_CTX_free(ctx);
 
-    // 5. Encode signature as base64 string
+    EVP_MD_CTX_free(md_ctx);
+    EVP_PKEY_free(pkey);
+
     return CryptoUtils::base64_encode(signature);
 }
 
-std::vector<std::string> Server::set_headers(
+nlohmann::json Server::set_headers(
     const Ed25519PrivateKey &private_key,
     const std::string &user_uuid,
     const nlohmann::json &payload
@@ -343,11 +563,10 @@ std::vector<std::string> Server::set_headers(
 
     std::string signature = sign_payload(payload_bytes, nonce, private_key);
 
-    std::vector<std::string> headers = {
-        "X-User-UUID: " + user_uuid,
-        "X-Nonce: " + nonce,
-        "X-Signature: " + signature
-    };
+    nlohmann::json headers;
+    headers["X-User-UUID"]=user_uuid;
+    headers["X-Nonce"] =nonce;
+    headers["X-Signature"] = signature;
+
     return headers;
 }
-

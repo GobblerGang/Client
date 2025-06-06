@@ -6,6 +6,7 @@
 #include "RequestHeaders.h"
 #include "models/KEKModel.h"
 #include "models/UserModel.h"
+#include "models/File.h"
 // Forward declaration
 class Ed25519PrivateKey;
 class PAC;
@@ -63,14 +64,7 @@ public:
 
     // #Function Declaration (call by const reference, returns by value)
     // Uploads a file to the server
-    std::pair<nlohmann::json, std::string> upload_file(const std::string& file_ciphertext,
-                                                       const std::string& file_name,
-                                                       const std::string& owner_uuid,
-                                                       const std::string& mime_type,
-                                                       const std::string& file_nonce,
-                                                       const std::string& enc_file_k,
-                                                       const std::string& k_file_nonce,
-                                                       const Ed25519PrivateKey& private_key);
+    std::pair<nlohmann::json, std::string> upload_file( File file, const std::string &owner_uuid, const Ed25519PrivateKey &private_key);
 
     std::pair<nlohmann::json, std::string> get_user_keys(const std::string& sender_user_uuid,
                                                          const std::string& recipient_uuid,
@@ -94,6 +88,18 @@ public:
                                                          const std::string& user_uuid,
                                                          const Ed25519PrivateKey& private_key);
 
+    std::pair<nlohmann::json, std::string> revoke_file_access(
+        const std::string &file_uuid,
+        const std::string &file_ciphertext,
+        const std::string &file_nonce,
+        const std::string &enc_file_k,
+        const std::string &k_file_nonce,
+        const std::vector<nlohmann::json> &pacs, // List of PACs as JSON objects
+        const std::string &owner_uuid,
+        const Ed25519PrivateKey &private_key,
+        const std::string &filename,
+        const std::string &mime_type
+    );
     bool get_index();
     // Get the server URL
     std::string server_url() const { return server_url_; }
@@ -113,15 +119,15 @@ private:
 
     // #Function Declaration (call by const reference, returns by value)
     // Performs a POST request to the server
-    HttpResponse post_request(const std::string& url, const nlohmann::json& payload, const std::vector<std::string>& headers = {});
+    HttpResponse post_request(const std::string& url, const nlohmann::json& payload, const nlohmann::json& headers = {});
 
     // #Function Declaration (call by const reference, returns by value, default argument)
     // Performs a GET request to the server
-    HttpResponse get_request(const std::string& url, const std::vector<std::string>& headers = {});
+    HttpResponse get_request(const std::string& url, const nlohmann::json& headers = {});
 
     // #Function Declaration (call by const reference, returns by value, default argument)
     // Performs a PUT request to the server
-    HttpResponse put_request(const std::string& url, const nlohmann::json& payload, const std::vector<std::string>& headers = {});
+    HttpResponse put_request(const std::string& url, const nlohmann::json& payload, const nlohmann::json& headers = {});
 
     // #Function Declaration (call by const reference, returns by value)
     // Parses and validates the server response
@@ -137,12 +143,12 @@ private:
 
     // #Function Declaration (call by const reference, returns by value)
     // Sets up headers for the request
-    std::vector<std::string> set_headers(const Ed25519PrivateKey &private_key, const std::string &user_uuid,
+    nlohmann::json set_headers(const Ed25519PrivateKey &private_key, const std::string &user_uuid,
                                          const nlohmann::json &payload);
 
     // #Function Declaration (call by const reference, returns by value, default argument)
     // Performs the actual HTTP request
-    HttpResponse perform_request(const std::string& url, const std::vector<std::string>& headers, const std::string* payload, bool is_post, bool is_put = false);
+    HttpResponse perform_request(const std::string& url,const nlohmann::json& headers, const std::string* payload, bool is_post, bool is_put = false);
 
 };
 

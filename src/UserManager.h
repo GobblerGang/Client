@@ -34,6 +34,9 @@ public:
     // Sets the user data with provided username and email
     void setUser(const std::string& username, const std::string& email);
 
+    const UserModel& getUser() const {
+        return user_data;
+    }
     // #Function Declaration (call by const reference, returns by value)
     // Decrypts the KEK using the provided master key
     std::vector<uint8_t> get_decrypted_kek(const std::vector<uint8_t> &master_key) const;

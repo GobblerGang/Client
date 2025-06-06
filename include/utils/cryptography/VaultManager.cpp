@@ -60,24 +60,24 @@ std::map<std::string, std::string> VaultManager::get_user_vault(const UserModel&
 
 std::optional<std::tuple<std::vector<uint8_t>, std::vector<uint8_t>, std::vector<uint8_t>>>
 VaultManager::try_decrypt_private_keys(const std::map<std::string, std::string>& vault,
-                                      const std::vector<uint8_t>& master_key) {
+                                      const std::vector<uint8_t>& kek) {
     // Decrypt Ed25519 identity key
     auto ed25519_ik_enc = CryptoUtils::base64_decode(vault.at("ed25519_identity_key_private_enc"));
     auto ed25519_ik_nonce = CryptoUtils::base64_decode(vault.at("ed25519_identity_key_private_nonce"));
     auto ed25519_identity_private_bytes = CryptoUtils::decrypt_with_key(
-        ed25519_ik_nonce, ed25519_ik_enc, master_key, ed25519_identity_associated_data);
+        ed25519_ik_nonce, ed25519_ik_enc, kek, ed25519_identity_associated_data);
     
     // Decrypt X25519 identity key
     auto x25519_ik_enc = CryptoUtils::base64_decode(vault.at("x25519_identity_key_private_enc"));
     auto x25519_ik_nonce = CryptoUtils::base64_decode(vault.at("x25519_identity_key_private_nonce"));
     auto x25519_identity_private_bytes = CryptoUtils::decrypt_with_key(
-        x25519_ik_nonce, x25519_ik_enc, master_key, x25519_identity_associated_data);
+        x25519_ik_nonce, x25519_ik_enc, kek, x25519_identity_associated_data);
     
     // Decrypt signed prekey
     auto spk_enc = CryptoUtils::base64_decode(vault.at("signed_prekey_private_enc"));
     auto spk_nonce = CryptoUtils::base64_decode(vault.at("signed_prekey_private_nonce"));
     auto spk_private_bytes = CryptoUtils::decrypt_with_key(
-        spk_nonce, spk_enc, master_key, spk_associated_data);
+        spk_nonce, spk_enc, kek, spk_associated_data);
 
     return std::make_tuple(ed25519_identity_private_bytes, x25519_identity_private_bytes, spk_private_bytes);
 }

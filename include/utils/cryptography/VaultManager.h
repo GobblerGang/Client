@@ -23,7 +23,7 @@ public:
     
     static std::optional<std::tuple<std::vector<uint8_t>, std::vector<uint8_t>, std::vector<uint8_t>>>
     try_decrypt_private_keys(const std::map<std::string, std::string>& vault,
-                           const std::vector<uint8_t>& master_key);
+                           const std::vector<uint8_t>& kek);
     
     static bool verify_decrypted_keys(
         const std::vector<uint8_t>& ed25519_identity_private_bytes,

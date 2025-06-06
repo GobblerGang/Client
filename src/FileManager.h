@@ -6,6 +6,8 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
+
+#include "UserManager.h"
 #include "utils/cryptography/CryptoUtils.h"
 
 
@@ -19,6 +21,10 @@ public:
     // #Constructor (call by const reference)
     // Creates a new FileManager instance with the specified File data
     explicit FileManager(const File& data);
+
+    // explicit FileManager(UserManager* user_manager);
+
+
     // #Virtual Destructor Override
     // Ensures proper cleanup of FileManager resources
     ~FileManager() override = default;
@@ -33,10 +39,11 @@ public:
     // Sets the internal File data to the provided value
     void setData(const File& data) { data_ = data; }
 
+    FileManager(UserManager* user_manager);
     // File operations
     // #Function Declaration (call by const reference)
     // Encrypts the provided file content with the specified MIME type
-    void encrypt(const std::vector<uint8_t>& file_content, const std::string& mime_type);
+    void encrypt(const std::vector<uint8_t>& file_content, const std::string& mime_type, const std::string &filename);
     // #Function Declaration (returns by value)
     // Decrypts and returns the file content
     std::vector<uint8_t> decrypt() const;
@@ -45,7 +52,8 @@ public:
     // #Function Declaration (returns by value)
     // Prepares the file data for upload to the server
     nlohmann::json prepareForUpload() const;
-
+    void uploadFile(const std::vector<uint8_t> &file_content, const std::string &mime_type,
+                    const std::string &file_name);
 protected:
     // #Virtual Function Override (returns by value)
     // Implements the pure virtual function from DataManager
@@ -58,6 +66,7 @@ protected:
 
 private:
     File data_; // Internal storage for file data
+    UserManager* userManager_; // Reference to UserManager for user-related operations
 };
 
 #endif // FILE_H
