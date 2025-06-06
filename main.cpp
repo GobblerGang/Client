@@ -267,6 +267,37 @@ private:
         // Delete logic
     }
 
+    void loadFiles() const {
+        try {
+            fileManager->refreshFiles();
+            const auto& files = fileManager->getFiles();
+            ui.fileList->clear();
+            ui.fileList->addItem("Owned Files:");
+            for (const auto& file : files) {
+                if (file.isOwner) {
+                    QString info = QString("%1\nUUID: %2\nMIME: %3")
+                        .arg(QString::fromStdString(file.file_name))
+                        .arg(QString::fromStdString(file.file_uuid))
+                        .arg(QString::fromStdString(file.mime_type));
+                    ui.fileList->addItem(info);
+                }
+            }
+            ui.fileList->addItem("Shared With You:");
+            for (const auto& file : files) {
+                if (!file.isOwner) {
+                    QString info = QString("%1\nUUID: %2\nMIME: %3")
+                        .arg(QString::fromStdString(file.file_name))
+                        .arg(QString::fromStdString(file.file_uuid))
+                        .arg(QString::fromStdString(file.mime_type));
+                    ui.fileList->addItem(info);
+                }
+            }
+        }
+        catch (const std::exception& e) {
+            QMessageBox::critical(ui.window, "Error", QString("Failed to load files: %1").arg(e.what()));
+        }
+    }
+
     void switchToAuthTabs() {
         currentUser.clear();
 
@@ -301,11 +332,13 @@ private:
         ui.fileList->addItem("Shared With You:");
 
         ui.window->setWindowTitle("GG File Sharing - " + currentUser);
+        loadFiles();
     }
 };
 
 
 int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
     Server& server = Server::instance();
     if (!server.get_index()) {
         QMessageBox::critical(nullptr, "Server Error",
@@ -313,7 +346,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    QApplication app(argc, argv);
+
 
     UserManager* userManager = new UserManager();
     FileManager* fileManager = new FileManager(userManager);

@@ -272,6 +272,24 @@ std::vector<uint8_t> UserManager::get_decrypted_kek(const std::vector<uint8_t> &
     auto [decrypted_kek, _aad] = KekService::decrypt_kek(kek_model, master_key, user_uuid);
 
     return decrypted_kek;
+}
+
+Ed25519PrivateKey UserManager::get_ed25519_identity_key_private() {
+    auto vault = VaultManager::get_user_vault(user_data);
+    auto master_key = MasterKey::instance().get();
+    auto kek = get_decrypted_kek(master_key);
+    auto opt_keys = VaultManager::try_decrypt_private_keys(vault, kek);
+    if (!opt_keys.has_value()) {
+        throw std::runtime_error("Failed to decrypt private keys from vault.");
+    }
+    auto ed25519_private_key_bytes = CryptoUtils::decrypt_with_key(
+        CryptoUtils::base64_decode(user_data.ed25519_identity_key_private_nonce),
+        CryptoUtils::base64_decode(user_data.ed25519_identity_key_private_enc),
+        kek,
+        VaultManager::get_ed25519_identity_associated_data()
+    );
+    const Ed25519PrivateKey ed25519_private_key(ed25519_private_key_bytes);
+    return ed25519_private_key;
 };
 
 void UserManager::check_kek_freshness() {
