@@ -7,25 +7,27 @@
 #include "UserManager.h"
 #include <stdexcept>
 #include "Server.h"
+#include "utils/cryptography/VaultManager.h"
 #include "utils/cryptography/keys/MasterKey.h"
+#include "utils/dataclasses/Vault.h"
 
 // Add a member variable for UserManager reference in FileManager's implementation file
 
 // Store a reference to UserManager
 
 // Constructor to accept UserManager reference
-FileManager::FileManager(UserManager& user_manager)
+FileManager::FileManager(UserManager* user_manager)
     : userManager_(user_manager)
 {}
 
-void FileManager::encrypt(const std::vector<uint8_t>& plain_text, const std::string& mime_type) {
+void FileManager::encrypt(const std::vector<uint8_t>& plain_text, const std::string& mime_type, const std::string &filename) {
     // Generate a random k_file
     std::vector<uint8_t> k_file = KeyGeneration::generate_symmetric_key();
     auto file_nonce = CryptoUtils::generate_nonce(12);
     // Encrypt the file with k_file
     auto enc_file = CryptoUtils::encrypt_with_key(plain_text, k_file, file_nonce, std::nullopt );
     const std::vector<uint8_t>& master_key = MasterKey::instance().get();
-    std::vector<uint8_t> kek = userManager_.get_decrypted_kek(master_key);
+    std::vector<uint8_t> kek = userManager_->get_decrypted_kek(master_key);
 
     // Encrypt k_file with KEK
     auto k_file_nonce = CryptoUtils::generate_nonce(12);
@@ -35,6 +37,7 @@ void FileManager::encrypt(const std::vector<uint8_t>& plain_text, const std::str
     data_.file_nonce = CryptoUtils::base64_encode(file_nonce);
     data_.enc_file_ciphertext = CryptoUtils::base64_encode(enc_file);
     data_.mime_type = mime_type;
+    data_.file_name = filename;
     data_.enc_file_k = CryptoUtils::base64_encode(enc_k_file);
     data_.k_file_nonce = CryptoUtils::base64_encode(k_file_nonce);
 }
@@ -76,18 +79,39 @@ void FileManager::uploadFile(const std::vector<uint8_t>& fileBytes,
         // 1. Create File struct and set file name
         std::cout << "File name: " << fileBytes.size() << std::endl;
         // 2. Encrypt the file
-        encrypt(fileBytes, mimeType);
+        encrypt(fileBytes, mimeType, fileName);
 
         // 3. Upload to server using Server singleton
-        // auto [response, error] = Server::instance().upload_file(
-        //     data_,
-        //     data_.get_user_data().uuid,
-        //     data_.get_identity_key()
-        // );
+        const UserModel current_user = userManager_->getUser();
+        auto vault = VaultManager::get_user_vault(current_user);
+        auto master_key = MasterKey::instance().get();
+        auto kek = userManager_->get_decrypted_kek(master_key);
+        auto opt_keys = VaultManager::try_decrypt_private_keys(vault, kek);
+        if (!opt_keys.has_value()) {
+            throw std::runtime_error("Failed to decrypt private keys from vault.");
+        }
+        // const auto& [ed25519_private_key_bytes, x25519_private_key_bytes, signed_prekey_bytes] = *opt_keys;
+        auto ed25519_private_key_bytes = CryptoUtils::decrypt_with_key(
+        CryptoUtils::base64_decode(current_user.ed25519_identity_key_private_nonce),
+        CryptoUtils::base64_decode(current_user.ed25519_identity_key_private_enc),
+        kek,
+        VaultManager::get_ed25519_identity_associated_data()
+    );
+        if (ed25519_private_key_bytes.empty()) {
+            throw std::runtime_error("Failed to decrypt Ed25519 identity key with new password.");
+        }
+        Ed25519PrivateKey ed25519_private_key(ed25519_private_key_bytes);
 
-        // if (!error.empty()) {
-        //     throw std::runtime_error(error);
-        // }
+
+        auto [response, error] = Server::instance().upload_file(
+            data_,
+            current_user.uuid,
+            ed25519_private_key
+        );
+
+        if (!error.empty()) {
+            throw std::runtime_error(error);
+        }
 
     } catch (const std::exception& e) {
         throw std::runtime_error("Upload failed: " + std::string(e.what()));

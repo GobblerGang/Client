@@ -5,7 +5,7 @@
 
 #include "FileManager.h"
 #include "Server.h"
-#include "UI.cpp"
+#include "UI.h"
 #include "UserManager.h"
 #include "database/db_instance.h"
 #include "src/Auth.h"
@@ -19,7 +19,7 @@ int main(int argc, char *argv[]){
 
     // #Raw Pointer to UserManager
     UserManager* userManager = new UserManager();
-    FileManager* fileManager = new FileManager(*userManager);
+    FileManager* fileManager = new FileManager(userManager);
     QApplication app(argc, argv);
     const MainWindowUI ui;
     QString currentUser;

@@ -27,6 +27,7 @@ UserManager::UserManager() {
 }
 
 UserManager::~UserManager() {
+    std::cout << "UserManager::~UserManager()" << std::endl;
     MasterKey::instance().clear();
 }
 
@@ -228,7 +229,7 @@ void UserManager::changePassword(const std::string& user_uuid, const std::string
     auto ed25519_private_key_bytes = CryptoUtils::decrypt_with_key(
         CryptoUtils::base64_decode(user_data.ed25519_identity_key_private_enc),
         CryptoUtils::base64_decode(user_data.ed25519_identity_key_private_nonce),
-        new_master_key,
+        kek,
         VaultManager::get_ed25519_identity_associated_data()
     );
     if (ed25519_private_key_bytes.empty()) {
@@ -272,7 +273,6 @@ std::vector<uint8_t> UserManager::get_decrypted_kek(const std::vector<uint8_t> &
 
     return decrypted_kek;
 };
-
 
 void UserManager::check_kek_freshness() {
     // Fetch KEK info from server
