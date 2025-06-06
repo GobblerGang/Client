@@ -10,11 +10,15 @@
 #include "database/db_instance.h"
 #include "src/Auth.h"
 #include "src/models/UserModel.h"
+#include <QMimeDatabase>
+#include <QFileInfo>
+#include <QFile>
+#include "FileManager.h"
 
 class ApplicationController {
 public:
-    ApplicationController(MainWindowUI& ui, UserManager& userManager)
-        : ui(ui), userManager(userManager) {
+    ApplicationController(MainWindowUI& ui, UserManager* userManager, FileManager* fileManager)
+        : ui(ui), userManager(userManager), fileManager(fileManager) {
         setupConnections();
     }
 
@@ -25,7 +29,8 @@ public:
 
 private:
     MainWindowUI& ui;
-    UserManager& userManager;
+    UserManager* userManager;
+    FileManager* fileManager;
     QString currentUser;
 
     // using HandlerType = void (ApplicationController::*)(bool);
@@ -68,7 +73,7 @@ private:
             in >> keys;
             in.close();
 
-            userManager.import_keys(keys, password.toStdString(), username.toStdString());
+            userManager->import_keys(keys, password.toStdString(), username.toStdString());
             ui.loginStatusLabel->setText("Keys imported successfully. You can now log in.");
         } catch (const std::exception& e) {
             ui.loginStatusLabel->setText(QString("Import failed: ") + e.what());
@@ -119,7 +124,7 @@ private:
         }
 
         try {
-            if (userManager.login(username.toStdString(), password.toStdString())) {
+            if (userManager->login(username.toStdString(), password.toStdString())) {
                 currentUser = username;
                 ui.loginStatusLabel->setText("Login successful!");
                 switchToFilesTab();
@@ -151,7 +156,7 @@ private:
                 return;
             }
 
-            if (!userManager.signup(username.toStdString(), email.toStdString(), password.toStdString())) {
+            if (!userManager->signup(username.toStdString(), email.toStdString(), password.toStdString())) {
                 ui.signupStatusLabel->setText("Signup failed. Please try again.");
                 return;
             }
@@ -166,7 +171,7 @@ private:
     }
     void handleExportKeys(bool) {
         try {
-            const nlohmann::json keys = userManager.export_keys();
+            const nlohmann::json keys = userManager->export_keys();
             const QString fileName = QFileDialog::getSaveFileName(ui.window, "Export Keys", "", "JSON Files (*.json)");
             if (fileName.isEmpty()) return;
 
@@ -181,8 +186,38 @@ private:
     }
 
     void handleUpload(bool) {
-        QString fileName = QFileDialog::getOpenFileName(ui.window, "Select File to Upload");
-        // File upload logic
+        QString filePath = QFileDialog::getOpenFileName(ui.window, "Select File to Upload");
+        if (filePath.isEmpty()) {
+            return; // User cancelled selection
+        }
+
+        try {
+            // Read the file
+            QFile file(filePath);
+            if (!file.open(QIODevice::ReadOnly)) {
+                QMessageBox::critical(ui.window, "Error", "Could not open file for reading.");
+                return;
+            }
+
+            // Get file info
+            QFileInfo fileInfo(file);
+            QString fileName = fileInfo.fileName();
+            QString mimeType = QMimeDatabase().mimeTypeForFile(fileInfo).name();
+            QByteArray fileData = file.readAll();
+            file.close();
+
+            // Convert QByteArray to vector<uint8_t>
+            std::vector<uint8_t> fileBytes(fileData.begin(), fileData.end());
+
+            // Call uploadFile with the file data
+            fileManager->uploadFile(fileBytes, mimeType.toStdString(), fileName.toStdString());
+
+            QMessageBox::information(ui.window, "Success", "File uploaded successfully!");
+
+        } catch (const std::exception& e) {
+            QMessageBox::critical(ui.window, "Error",
+                QString("Failed to upload file: %1").arg(e.what()));
+        }
     }
 
     void handleShare(bool) {
@@ -280,9 +315,10 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
 
-    UserManager userManager;
+    UserManager* userManager = new UserManager();
+    FileManager* fileManager = new FileManager(userManager);
     MainWindowUI ui;
-    ApplicationController controller(ui, userManager);
+    ApplicationController controller(ui, userManager, fileManager);
 
     controller.run();
     return app.exec();
