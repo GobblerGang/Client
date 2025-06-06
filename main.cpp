@@ -8,6 +8,7 @@
 #include "ui.h"
 #include "UserManager.h"
 #include "database/db_instance.h"
+#include "src/FileManager.h"
 #include "src/Auth.h"
 #include "src/models/UserModel.h"
 
@@ -87,7 +88,7 @@ private:
 
     void connectFileOperations() {
         connectButton(ui.uploadButton, &ApplicationController::handleUpload);
-        // connectButton(ui.downloadButton, &ApplicationController::handleDownload);
+        connectButton(ui.downloadButton, &ApplicationController::handleDownload);
         connectButton(ui.shareButton, &ApplicationController::handleShare);
         connectButton(ui.revokeButton, &ApplicationController::handleRevoke);
         connectButton(ui.deleteButton, &ApplicationController::handleDelete);
@@ -95,7 +96,8 @@ private:
     }
 
 
-    void handleDownload(bool arg);
+   void handleDownload(bool) {
+}
 
     void handleLogout(bool) {
         QMessageBox::StandardButton reply = QMessageBox::question(

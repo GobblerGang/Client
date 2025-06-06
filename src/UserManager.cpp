@@ -4,8 +4,6 @@
 
 #include "UserManager.h"
 
-#include <iostream>
-
 #include "nlohmann/json.hpp"
 #include "utils/cryptography/keys/MasterKey.h"
 #include "Server.h"
@@ -19,8 +17,6 @@
 #include <optional>
 #include <string>
 #include <utility>
-
-#include "utils/dataclasses/Vault.h"
 
 UserManager::UserManager() {
     user_data = UserModel();
