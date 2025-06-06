@@ -279,7 +279,9 @@ private:
                         .arg(QString::fromStdString(file.file_name))
                         .arg(QString::fromStdString(file.file_uuid))
                         .arg(QString::fromStdString(file.mime_type));
-                    ui.fileList->addItem(info);
+                    QListWidgetItem* item = new QListWidgetItem(info);
+                    item->setData(Qt::UserRole, QString::fromStdString(file.file_uuid));
+                    ui.fileList->addItem(item);
                 }
             }
             ui.fileList->addItem("Shared With You:");
@@ -289,7 +291,9 @@ private:
                         .arg(QString::fromStdString(file.file_name))
                         .arg(QString::fromStdString(file.file_uuid))
                         .arg(QString::fromStdString(file.mime_type));
-                    ui.fileList->addItem(info);
+                    QListWidgetItem* item = new QListWidgetItem(info);
+                    item->setData(Qt::UserRole, QString::fromStdString(file.file_uuid));
+                    ui.fileList->addItem(item);
                 }
             }
         }
