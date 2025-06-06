@@ -271,30 +271,41 @@ private:
         try {
             fileManager->refreshFiles();
             const auto& files = fileManager->getFiles();
+            const auto& received_pacs = fileManager->getReceivedPacs();
+            const auto& issued_pacs = fileManager->getIssuedPacs();
             ui.fileList->clear();
             ui.fileList->addItem("Owned Files:");
             for (const auto& file : files) {
-                if (file.isOwner) {
-                    QString info = QString("%1\nUUID: %2\nMIME: %3")
-                        .arg(QString::fromStdString(file.file_name))
-                        .arg(QString::fromStdString(file.file_uuid))
-                        .arg(QString::fromStdString(file.mime_type));
+                std::vector<std::string> sharedWith;
+                for (const auto& pac : issued_pacs) {
+                    if (pac.file_uuid == file.file_uuid) {
+                        sharedWith.push_back(pac.recipient_username); // or pac.recipient_uuid
+                    }
+                }
+                // Display file info and sharedWith list
+                QString info = QString("%1\nMIME: %2\nShared with: %3")
+                    .arg(QString::fromStdString(file.file_name))
+                    .arg(QString::fromStdString(file.mime_type))
+                    .arg(QString::fromStdString(
+                        sharedWith.empty() ? "None" :
+                        std::accumulate(std::next(sharedWith.begin()), sharedWith.end(), sharedWith[0],
+                            [](std::string a, std::string b) { return a + ", " + b; })
+                    ));
                     QListWidgetItem* item = new QListWidgetItem(info);
                     item->setData(Qt::UserRole, QString::fromStdString(file.file_uuid));
                     ui.fileList->addItem(item);
-                }
             }
             ui.fileList->addItem("Shared With You:");
-            for (const auto& file : files) {
-                if (!file.isOwner) {
-                    QString info = QString("%1\nUUID: %2\nMIME: %3")
-                        .arg(QString::fromStdString(file.file_name))
-                        .arg(QString::fromStdString(file.file_uuid))
-                        .arg(QString::fromStdString(file.mime_type));
+            for (const auto& pac : received_pacs) {
+
+                    QString info = QString("%1\n %2\nOwner: %3")
+                        .arg(QString::fromStdString(pac.filename))
+                        .arg(QString::fromStdString(pac.mime_type))
+                        .arg(QString::fromStdString(pac.issuer_username));
                     QListWidgetItem* item = new QListWidgetItem(info);
-                    item->setData(Qt::UserRole, QString::fromStdString(file.file_uuid));
+                    item->setData(Qt::UserRole, QString::fromStdString(pac.file_uuid));
                     ui.fileList->addItem(item);
-                }
+
             }
         }
         catch (const std::exception& e) {

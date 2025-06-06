@@ -12,7 +12,9 @@ PAC::PAC(const std::string& recipient_id,
          const std::string& sender_ephemeral_public,
          const std::string& k_file_nonce,
          const std::string& filename,
-         const std::string& mime_type)
+         const std::string& mime_type,
+         const std::string& issuer_username,
+         const std::string& recipient_username)
     : recipient_id(recipient_id),
       file_uuid(file_uuid),
       valid_until(valid_until),
@@ -22,27 +24,28 @@ PAC::PAC(const std::string& recipient_id,
       sender_ephemeral_public(sender_ephemeral_public),
       k_file_nonce(k_file_nonce),
       filename(filename),
-      mime_type(mime_type) {}
+      mime_type(mime_type),
+      issuer_username(issuer_username),
+      recipient_username(recipient_username) {}
 
 PAC PAC::from_json(const json& data) {
-    const json& pac_data = data.contains("pac") ? data["pac"] : json::object();
-
-    auto get_optional_str = [](const json& j, const std::string& key) -> std::optional<std::string> {
-        return j.contains(key) && !j[key].is_null() ? std::make_optional(j[key].get<std::string>()) : std::nullopt;
-    };
+    auto get_str = [](const nlohmann::json& j, const std::string& key, const std::string& def = "") {
+    return j.contains(key) && !j[key].is_null() ? j[key].get<std::string>() : def;
+};
 
     return PAC(
-        data.at("recipient_id").get<std::string>(),
-        data.contains("file_uuid") ? data["file_uuid"].get<std::string>() : data["file_id"].get<std::string>(),
-        pac_data.at("valid_until").get<std::string>(),
-        pac_data.at("encrypted_file_key").get<std::string>(),
-        pac_data.at("signature").get<std::string>(),
-        data.at("issuer_id").get<std::string>(),
-        pac_data.at("sender_encrypted_file_key").get<std::string>(),
-        pac_data.contains("nonce") ? pac_data["nonce"].get<std::string>()
-                                   : pac_data.at("encrypted_file_key_nonce").get<std::string>(),
-        pac_data.at("filename").get<std::string>(),
-        pac_data.at("mime_type").get<std::string>()
+        get_str(data, "recipient_uuid"),
+        get_str(data, "file_uuid"),
+        get_str(data, "valid_until"),
+        get_str(data, "encrypted_file_key"),
+        get_str(data, "signature"),
+        get_str(data, "issuer_uuid"),
+        get_str(data, "sender_ephemeral_public_key"),
+        get_str(data, "k_file_nonce"),
+        get_str(data, "file_name"),
+        get_str(data, "mime_type"),
+        get_str(data, "issuer_username"),
+        get_str(data, "recipient_username")
     );
 }
 

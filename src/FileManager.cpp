@@ -69,7 +69,7 @@ void FileManager::load(const std::string& identifier = "") {
         throw std::runtime_error("Failed to load files: " + error);
     }
     std::cout << "Files JSON: " << files_json.dump(4) << std::endl;
-    setFilesFromJson(files_json["files"], true);
+    setFilesFromJson(files_json["files"], files_);
     auto pacs_json = Server::instance().get_user_pacs(
         user.uuid,
         userManager_->get_ed25519_identity_key_private()
@@ -77,29 +77,12 @@ void FileManager::load(const std::string& identifier = "") {
     std::cout << "PACs JSON: " << pacs_json.dump(4) << std::endl;
 
     nlohmann::json issued_pacs = pacs_json["issued_pacs"];
-    nlohmann::json received_pacs = pacs_json["received_pacs"];
-    setFilesFromJson(received_pacs, false);
+    const nlohmann::json received_pacs = pacs_json["received_pacs"];
+    setFilesFromJson(received_pacs, received_pacs_);
+    setFilesFromJson(issued_pacs, issued_pacs_);
 }
 
-void FileManager::setFilesFromJson(const nlohmann::json &files_json, bool isOwner = false) {
-    if (!files_json.is_array()) {
-        throw std::runtime_error("Invalid files JSON format: expected an array");
-    }
-    for (const auto& file_json : files_json) {
-        std::cout << "File JSON: " << file_json.dump(4) << std::endl;
-        File file;
 
-        if (file_json.contains("filename")) {
-            file.file_name = file_json["filename"].get<std::string>();
-        } else if (file_json.contains("file_name")) {
-            file.file_name = file_json["file_name"].get<std::string>();
-        }
-        file.file_uuid = file_json["file_uuid"].get<std::string>();
-        file.mime_type = file_json["mime_type"].get<std::string>();
-        file.isOwner = isOwner;
-        files_.push_back(file);
-    }
-}
 
 void FileManager::refreshFiles() {
     try {

@@ -55,7 +55,10 @@ public:
     void uploadFile(const std::vector<uint8_t> &file_content, const std::string &mime_type,
                     const std::string &file_name);
     void refreshFiles();
-    const std::vector<File> getFiles() const { return files_; }
+
+    std::vector<File> getFiles() const { return files_; }
+    std::vector<PAC> getReceivedPacs() const { return received_pacs_; }
+    std::vector<PAC> getIssuedPacs() const { return issued_pacs_; }
 protected:
     // #Virtual Function Override (returns by value)
     // Implements the pure virtual function from DataManager
@@ -69,8 +72,18 @@ protected:
 private:
     File data_; // Internal storage for file data
     std::vector<File> files_; // List of files managed by this FileManager
+    std::vector<PAC> received_pacs_; // List of PACs shared with the user
+    std::vector<PAC> issued_pacs_; // List of PACs issued by the user
     UserManager* userManager_; // Reference to UserManager for user-related operations
-    void setFilesFromJson(const nlohmann::json& files_json, bool isOwner);
+    template <typename T>
+    void setFilesFromJson(const nlohmann::json& json_arr, std::vector<T> &list) {
+        if (!json_arr.is_array()) {
+            throw std::runtime_error("Invalid files JSON format: expected an array");
+        }
+        for (const auto& json_obj : json_arr) {
+            list.push_back(T::from_json(json_obj));
+        }
+    }
 
 
 };
